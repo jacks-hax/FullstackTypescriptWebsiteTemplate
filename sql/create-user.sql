@@ -1,10 +1,10 @@
-USE tssk;
+USE {!database};
 
-DROP PROCEDURE IF EXISTS create_tsk_user;
+DROP PROCEDURE IF EXISTS create_user;
 
 DELIMITER //
 
-CREATE PROCEDURE create_tsk_user ()
+CREATE PROCEDURE create_user ()
 BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
@@ -23,4 +23,4 @@ END //
 
 DELIMITER ;
 
-CALL create_tsk_user();
+CALL create_user();
