@@ -5,6 +5,8 @@ import JsonApiResponse from '@models/jsonapi';
 import Constants from '@constants/shared';
 import User from '@database/models/user';
 import Utils from '@utils/utils';
+import Limits from '@constants/limits';
+import StringUtils from '@utils/string';
 
 /**
  * @description Fetch User Details by ID
@@ -13,7 +15,17 @@ import Utils from '@utils/utils';
  */
 async function getUserById(request: Request, response: Response) {
     try {
-        const user = await UserRepository.getUserDetails(request.params.id);
+        const userId = StringUtils.getRequestParameter(request, 'id');
+        if (!userId?.length) {
+            throw new RequestError(Constants.ERROR_CODES.BAD_REQUEST, 'User Id missing from parameter list');
+        }
+        if (userId.length > Limits.ID_MAX_LENGTH) {
+            throw new RequestError(
+                Constants.ERROR_CODES.NOT_FOUND,
+                StringUtils.format(Constants.ERROR_MESSAGES.USER_NOT_FOUND, ['Id', userId])
+            );
+        }
+        const user = await UserRepository.getUserDetails(userId);
         response.status(200).json(new JsonApiResponse(user));
     } catch (error) {
         console.error(error);
@@ -82,7 +94,7 @@ async function createUser(request: Request, response: Response) {
 async function updateUser(request: Request, response: Response) {
     try {
         const inputUser = User.from(request.body);
-        inputUser.Id = request.params.id;
+        inputUser.Id = StringUtils.getRequestParameter(request, 'id');
         console.log('UPDATE USER', inputUser);
         const result = await UserRepository.updateUser(inputUser);
 
@@ -109,7 +121,7 @@ async function deactivateUser(request: Request, response: Response) {
     try {
         const payload = request.body;
         console.log('DEACTIVATE USER', payload, request.params);
-        const userId = request.params.id;
+        const userId = StringUtils.getRequestParameter(request, 'id');
         const result = await UserRepository.deactivateUser(userId);
 
         response.status(200).json({
@@ -133,7 +145,7 @@ async function deactivateUser(request: Request, response: Response) {
 
 async function deleteUser(request: Request, response: Response) {
     try {
-        const userId = request.params.id;
+        const userId = StringUtils.getRequestParameter(request, 'id');
         const user = await UserRepository.getUserDetails(userId);
         if (!user) {
             throw new RequestError(Constants.ERROR_CODES.NOT_FOUND, `User with Id ${userId} not found.`);

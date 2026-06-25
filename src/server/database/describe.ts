@@ -1,4 +1,4 @@
-import ModuleEventBus from '@utils/events/module-event-bus';
+//import ModuleEventBus from '@utils/events/module-event-bus';
 import AsyncModule from '@utils/async-module';
 import Database from '@database/database';
 
