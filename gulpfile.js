@@ -60,6 +60,7 @@ const SRC_DIR_SERVER = path.resolve(SRC_DIR, 'server');
 // Define output directories
 const OUT_DIR = path.resolve(__dirname, 'dist');
 const OUT_DIR_CLIENT = path.resolve(OUT_DIR, 'public');
+const OUT_DIR_CLIENT_STATIC = path.resolve(OUT_DIR_CLIENT, 'static');
 const OUT_DIR_SERVER = OUT_DIR;
 
 const SECRETS_DIR = path.resolve(OUT_DIR, '.private');
@@ -183,7 +184,7 @@ class Client {
     static copyImages() {
         return gulp
             .src([path.resolve(SRC_DIR_CLIENT, 'images/*'), `!${path.resolve(SRC_DIR_CLIENT, 'images/*.d.ts')}`])
-            .pipe(gulp.dest(path.resolve(OUT_DIR_CLIENT, 'images')));
+            .pipe(gulp.dest(path.resolve(OUT_DIR_CLIENT_STATIC, 'images')));
     }
 
     /**
@@ -211,7 +212,7 @@ class Client {
                 })
             )
             .pipe(beautifyCode(BEAUTIFY_CONFIG))
-            .pipe(gulp.dest(path.resolve(OUT_DIR_CLIENT, 'css')));
+            .pipe(gulp.dest(path.resolve(OUT_DIR_CLIENT_STATIC, 'css')));
     }
 
     /**
@@ -228,7 +229,7 @@ class Client {
             .pipe(Client.tsproject())
             .js.pipe(webpack(webpackConfig.default))
             .pipe(beautifyCode(BEAUTIFY_CONFIG))
-            .pipe(gulp.dest(path.resolve(OUT_DIR_CLIENT, 'js')));
+            .pipe(gulp.dest(path.resolve(OUT_DIR_CLIENT_STATIC, 'js')));
         return awaitStream(stream, callback);
     }
 
@@ -244,7 +245,10 @@ class Client {
      */
     static minifyCss() {
         return gulp
-            .src([path.resolve(OUT_DIR_CLIENT, 'css/*.css'), `!${path.resolve(OUT_DIR_CLIENT, 'css/*.min.css')}`])
+            .src([
+                path.resolve(OUT_DIR_CLIENT_STATIC, 'css/*.css'),
+                `!${path.resolve(OUT_DIR_CLIENT_STATIC, 'css/*.min.css')}`
+            ])
             .pipe(sourcemaps.init())
             .pipe(
                 cssnano({
@@ -259,7 +263,7 @@ class Client {
                 })
             )
             .pipe(sourcemaps.write('maps'))
-            .pipe(gulp.dest(path.resolve(OUT_DIR_CLIENT, 'css')));
+            .pipe(gulp.dest(path.resolve(OUT_DIR_CLIENT_STATIC, 'css')));
     }
 
     /**
@@ -269,9 +273,9 @@ class Client {
     static minifyJs() {
         return gulp
             .src([
-                path.resolve(OUT_DIR_CLIENT, 'js/**/*.js'),
-                `!${path.resolve(OUT_DIR_CLIENT, 'js/**/*.min.js')}`,
-                `!${path.resolve(OUT_DIR_CLIENT, 'js/lib/*.js')}`
+                path.resolve(OUT_DIR_CLIENT_STATIC, 'js/**/*.js'),
+                `!${path.resolve(OUT_DIR_CLIENT_STATIC, 'js/**/*.min.js')}`,
+                `!${path.resolve(OUT_DIR_CLIENT_STATIC, 'js/lib/*.js')}`
             ])
             .pipe(environments.development(sourcemaps.init()))
             .pipe(environments.production(uglify()))
@@ -281,7 +285,7 @@ class Client {
                 })
             )
             .pipe(environments.development(sourcemaps.write('maps')))
-            .pipe(gulp.dest(path.resolve(OUT_DIR_CLIENT, 'js')));
+            .pipe(gulp.dest(path.resolve(OUT_DIR_CLIENT_STATIC, 'js')));
     }
 
     /**
@@ -292,10 +296,10 @@ class Client {
         return gulp
             .src(
                 [
-                    path.resolve(OUT_DIR_CLIENT, './**/*.js'),
-                    path.resolve(OUT_DIR_CLIENT, './**/*.css'),
-                    `!${path.resolve(OUT_DIR_CLIENT, './**/*.min.js')}`,
-                    `!${path.resolve(OUT_DIR_CLIENT, './**/*.min.css')}`
+                    path.resolve(OUT_DIR_CLIENT_STATIC, './**/*.js'),
+                    path.resolve(OUT_DIR_CLIENT_STATIC, './**/*.css'),
+                    `!${path.resolve(OUT_DIR_CLIENT_STATIC, './**/*.min.js')}`,
+                    `!${path.resolve(OUT_DIR_CLIENT_STATIC, './**/*.min.css')}`
                 ],
                 { allowEmpty: true }
             )
@@ -303,7 +307,7 @@ class Client {
     }
 
     static cleanArtifacts() {
-        return gulp.src(path.resolve(OUT_DIR_CLIENT, 'js/src')).pipe(clean());
+        return gulp.src(path.resolve(OUT_DIR_CLIENT_STATIC, 'js/src')).pipe(clean());
     }
 
     /**
@@ -317,11 +321,17 @@ class Client {
      */
     static watch() {
         gulp.watch(
-            [path.resolve(OUT_DIR_CLIENT, 'css/**/*.css'), `!${path.resolve(OUT_DIR_CLIENT, 'css/**/*.min.css')}`],
+            [
+                path.resolve(OUT_DIR_CLIENT_STATIC, 'css/**/*.css'),
+                `!${path.resolve(OUT_DIR_CLIENT_STATIC, 'css/**/*.min.css')}`
+            ],
             Client.minifyCss
         );
         gulp.watch(
-            [path.resolve(OUT_DIR_CLIENT, 'js/**/*.js'), `!${path.resolve(OUT_DIR_CLIENT, 'js/**/*.min.js')}`],
+            [
+                path.resolve(OUT_DIR_CLIENT_STATIC, 'js/**/*.js'),
+                `!${path.resolve(OUT_DIR_CLIENT_STATIC, 'js/**/*.min.js')}`
+            ],
             Client.minifyJs
         );
         gulp.watch([path.resolve(SRC_DIR, 'ts/**/*'), 'webpack.config.js'], Client.compileTs);
