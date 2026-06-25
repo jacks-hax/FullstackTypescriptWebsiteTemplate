@@ -36,7 +36,10 @@ export default class User extends BaseModel implements IUser {
 
     public static readonly HIDDEN_FIELDS: Set<string> = new Set<string>(['Password']);
 
-    protected readonly ID_PREFIX: string = 'usr';
+    protected static readonly ID_PREFIX: string = 'usr';
+    protected getIdPrefix(): string {
+        return User.ID_PREFIX;
+    }
 
     /**
      * @description Parse a data object into a user instance

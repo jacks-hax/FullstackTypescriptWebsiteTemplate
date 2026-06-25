@@ -18,7 +18,7 @@ export default class Utils {
         // Throw an error if there are any extra fields that are not expected
         const unexpectedFields: Array<string> = [];
         for (const providedField of Object.keys(payload)) {
-            if (!allowedFieldSet.has(providedField)) {
+            if (payload[providedField] !== undefined && !allowedFieldSet.has(providedField)) {
                 unexpectedFields.push(providedField);
             }
         }
