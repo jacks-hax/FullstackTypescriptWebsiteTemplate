@@ -67,7 +67,7 @@ $link-hover-decoration: underline;
 
 // Import Bootstrap components
 
-@import 'node_modules/bootstrap/scss/bootstrap';
+@import '../../../node_modules/bootstrap/scss/bootstrap.scss';
 
 // Import secondary stylesheets to main.scss
 @import './frame.scss';
@@ -536,11 +536,8 @@ section {
                     z-index: 1;
                     margin: 0.5625rem 0.75rem;
                     backdrop-filter: blur(0.19375rem);
-                    background: radial-gradient(
-                            66.35% 66.35% at 50% 50%,
-                            hsla(0, 0%, 100%, 0.9) 0,
-                            hsla(0, 0%, 100%, 0) 100%
-                        ),
+                    background:
+                        radial-gradient(66.35% 66.35% at 50% 50%, hsla(0, 0%, 100%, 0.9) 0, hsla(0, 0%, 100%, 0) 100%),
                         hsla(0, 0%, 100%, 0.8);
                 }
                 .col_logo {

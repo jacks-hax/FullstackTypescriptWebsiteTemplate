@@ -1,4 +1,4 @@
-import { NavNode, DirectoryNode } from 'types/nav';
+import { NavNode, DirectoryNode } from 'nav-types';
 
 export default class NavUtils {
     public static findNode(id: string, nodes: Array<NavNode>): NavNode | null {

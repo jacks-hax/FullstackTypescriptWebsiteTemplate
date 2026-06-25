@@ -1,7 +1,7 @@
 import HttpClient from '@client/utils/http-client';
 import JsonApiException from '@client/models/json-api-exception';
 import { JsonApiPayload } from 'jsonapi-types';
-import LoginForm from 'types/login-form';
+import { LoginForm } from 'form-types';
 
 export default class AppService {
     private client: HttpClient;

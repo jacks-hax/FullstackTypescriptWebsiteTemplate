@@ -1,19 +1,21 @@
-export interface NavNode {
-    id: string;
-    name: string;
-    label: string;
-    description: string;
-    icon: string;
-    path: string;
-    parent: string;
-    type: 'd' | 'f';
-}
+declare module 'nav-types' {
+    export interface NavNode {
+        id: string;
+        name: string;
+        label: string;
+        description: string;
+        icon: string;
+        path: string;
+        parent: string;
+        type: 'd' | 'f';
+    }
 
-export interface DirectoryNode extends NavNode {
-    nodes: Array<NavNode>;
-}
+    export interface DirectoryNode extends NavNode {
+        nodes: Array<NavNode>;
+    }
 
-export interface FileNode extends NavNode {
-    content?: string;
-    encoding?: string;
+    export interface FileNode extends NavNode {
+        content?: string;
+        encoding?: string;
+    }
 }

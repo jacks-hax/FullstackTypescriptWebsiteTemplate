@@ -51,12 +51,13 @@ function Modal(props: ModalProps, ref: React.ForwardedRef<ModalHandle>): React.J
         if (!React.isValidElement(child)) {
             return;
         }
+        const props = child.props as ModalProps;
         if (child.type === ModalHeader) {
-            headerChildren = React.Children.toArray(child.props.children);
+            headerChildren = React.Children.toArray(props.children);
         } else if (child.type === ModalContent) {
-            contentChildren = React.Children.toArray(child.props.children);
+            contentChildren = React.Children.toArray(props.children);
         } else if (child.type === ModalFooter) {
-            footerChildren = React.Children.toArray(child.props.children);
+            footerChildren = React.Children.toArray(props.children);
         }
     });
 
@@ -96,7 +97,7 @@ function Modal(props: ModalProps, ref: React.ForwardedRef<ModalHandle>): React.J
     React.useImperativeHandle(ref, () => ({
         show,
         hide,
-        dialog: modalRef.current,
+        dialog: modalRef.current
     }));
 
     /**

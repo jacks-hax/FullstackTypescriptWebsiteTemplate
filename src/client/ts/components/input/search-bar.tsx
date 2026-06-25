@@ -17,7 +17,7 @@ import {
 import Modal, { ModalHeader, ModalContent, ModalHandle } from '@client/components/modal';
 
 // Types
-import { NavNode } from 'types/nav';
+import { NavNode } from 'nav-types';
 
 // Images
 import searchIcon from '@images/search-icon.svg';

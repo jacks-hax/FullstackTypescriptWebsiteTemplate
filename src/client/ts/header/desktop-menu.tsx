@@ -1,7 +1,7 @@
 import * as React from 'react';
 
-import type { Header as HeaderProps, NavMenuHandle } from 'types/header';
-import { DirectoryNode, NavNode } from 'types/nav';
+import type { Header as HeaderProps, NavMenuHandle } from 'header-types';
+import { DirectoryNode, NavNode } from 'nav-types';
 
 const EXTERNAL_LINKS = ['Careers', 'Videos', 'Partner Resources', 'PDO Customer Portal'];
 

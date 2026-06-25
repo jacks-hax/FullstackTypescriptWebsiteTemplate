@@ -12,7 +12,7 @@ import Toast, { ToastProps } from '@client/components/toast';
 
 // Types & Models
 import JsonApiException from '@client/models/json-api-exception';
-import LoginForm from 'types/login-form';
+import { LoginForm } from 'form-types';
 
 // Http webservice client
 import AppService from '@client/services/app-service';
@@ -29,19 +29,22 @@ export default function ContactSupportForm(props: ContactSupportFormProps): Reac
      * ---------------- STATE -------------------
      * ------------------------------------------
      */
-    const [formData, setFormData] = React.useState<LoginForm>({});
     const [isValid, setIsValid] = React.useState<boolean>(false);
     const [isLoading, setIsLoading] = React.useState<boolean>(false);
     const [linkArrowSvg, setLinkArrowSvg] = React.useState<string>('');
+    const [formData, setFormData] = React.useState<LoginForm>({
+        username: '',
+        password: ''
+    });
 
     /**
      * ------------------------------------------
      * ----------------- REFS -------------------
      * ------------------------------------------
      */
-    const inputRefs: { [key in keyof LoginForm]: React.RefObject<AbstractInputHandle> } = {
-        username: React.useRef<AbstractInputHandle>(null),
-        password: React.useRef<AbstractInputHandle>(null)
+    const inputRefs: { [key in keyof LoginForm]: React.RefObject<AbstractInputHandle | null> } = {
+        username: React.useRef<AbstractInputHandle | null>(null),
+        password: React.useRef<AbstractInputHandle | null>(null)
     };
 
     /**

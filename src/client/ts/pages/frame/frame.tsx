@@ -15,7 +15,7 @@ import BrowserUtils from '@client/utils/browser';
 import NavUtils from '@client/utils/nav';
 
 // Types & Models
-import { NavNode } from 'types/nav';
+import { NavNode } from 'nav-types';
 
 export interface FrameProps {
     navigationData: Array<NavNode>;

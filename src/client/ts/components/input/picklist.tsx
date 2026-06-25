@@ -43,7 +43,7 @@ function Picklist(props: PickListProps, ref: React.ForwardedRef<AbstractInputHan
      * ------------------------------------------
      */
 
-    const menuItemRefs = new Array<React.RefObject<HTMLAnchorElement>>(numOptions).fill(
+    const menuItemRefs = new Array<React.RefObject<HTMLAnchorElement | null>>(numOptions).fill(
         React.useRef<HTMLAnchorElement>(null)
     );
     const wrapperRef = React.useRef<HTMLDivElement>(null);

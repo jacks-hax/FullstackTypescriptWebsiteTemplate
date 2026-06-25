@@ -16,7 +16,7 @@ import { EnterEvent } from '@client/events';
 import { publish, subscribe, unsubscribe } from '@client/events/pub-sub';
 
 // Types & Models
-import { DirectoryNode, NavNode } from 'types/nav';
+import { DirectoryNode, NavNode } from 'nav-types';
 import toast from '@client/components/toast';
 
 export interface NavigationMenuProps {

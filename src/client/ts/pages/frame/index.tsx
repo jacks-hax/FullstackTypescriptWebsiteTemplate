@@ -9,8 +9,8 @@ import Frame from '@client/pages/frame/frame';
 import * as EventUtils from '@client/events/utils';
 
 // Types
-import AppWindow, { WindowData } from 'types/window';
-import { NavNode } from 'types/nav';
+import AppWindow, { WindowData } from 'window-types';
+import { NavNode } from 'nav-types';
 
 export interface FrameWindow extends AppWindow {
     AppData: WindowData & {

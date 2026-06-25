@@ -8,7 +8,7 @@ import Header from '@client/header/header';
 import Toast from '@client/components/toast';
 
 // Types
-import AppWindow from 'types/window';
+import AppWindow from 'window-types';
 declare const window: AppWindow;
 
 // Display any toasts that were stored in the cookies when the page was last loaded

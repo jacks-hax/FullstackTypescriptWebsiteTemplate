@@ -4,8 +4,8 @@ import * as React from 'react';
 import { subscribe, unsubscribe } from '@client/events/pub-sub';
 
 // Types
-import type { Header as HeaderProps, NavMenuHandle } from 'types/header';
-import { DirectoryNode, NavNode } from 'types/nav';
+import type { Header as HeaderProps, NavMenuHandle } from 'header-types';
+import { DirectoryNode, NavNode } from 'nav-types';
 
 function MobileMenu(props: HeaderProps, ref: React.ForwardedRef<NavMenuHandle>): React.JSX.Element {
     /**

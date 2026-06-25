@@ -115,13 +115,21 @@ export default class Database extends AsyncModule {
         return new Promise<Array<Record<string, any>>>((resolve, reject) => {
             const formattedQuery = connection.format(query, variables);
             console.log('Formatted Query:', formattedQuery);
-            connection.query(formattedQuery, (queryError: mysql.QueryError, result: mysql.RowDataPacket[]) => {
-                if (queryError) {
-                    reject(new DatabaseError(queryError));
-                } else {
-                    resolve(result);
+            connection.query(
+                formattedQuery,
+                (
+                    queryError: mysql.QueryError | null,
+                    result: Array<mysql.RowDataPacket>,
+                    _: Array<mysql.FieldPacket>
+                ) => {
+                    if (queryError) {
+                        reject(new DatabaseError(queryError));
+                    } else {
+                        resolve(result);
+                    }
+                    return null;
                 }
-            });
+            );
         });
     }
 
@@ -138,16 +146,19 @@ export default class Database extends AsyncModule {
         return new Promise<string>(async (resolve, reject) => {
             const recordId = record.generateId();
             const table = record.constructor.name;
-            const recordClone = record.createQuerySafeClone();
+            const recordClone = record.createQuerySafeClone() as unknown as Record<string, unknown>;
             const query = mysql.format('INSERT INTO ?? SET ?;', [table, recordClone]);
             console.log(query);
-            connection.query(query, (insertError: mysql.QueryError, _: mysql.QueryResult) => {
-                if (insertError) {
-                    reject(new DatabaseError(insertError));
-                } else {
-                    resolve(recordId);
+            connection.query(
+                query,
+                (insertError: mysql.QueryError | null, _: mysql.QueryResult, __: Array<mysql.FieldPacket>) => {
+                    if (insertError) {
+                        reject(new DatabaseError(insertError));
+                    } else {
+                        resolve(recordId);
+                    }
                 }
-            });
+            );
         });
     }
 
@@ -156,18 +167,21 @@ export default class Database extends AsyncModule {
             throw new DatabaseError(Constants.ERROR_MESSAGES.CANNOT_UPDATE_RECORD_WITHOUT_ID);
         }
         const table = record.constructor.name;
-        const recordClone = record.createQuerySafeClone();
+        const recordClone = record.createQuerySafeClone() as unknown as Record<string, unknown>;
         const query = mysql.format('UPDATE ?? SET ? WHERE Id = ?', [table, recordClone, record.Id]);
         console.log(query);
         const connection: mysql.PoolConnection = await Database.getConnection();
         return new Promise<mysql.OkPacket>((resolve, reject) => {
-            connection.query(query, (updateError: mysql.QueryError, result: mysql.OkPacket) => {
-                if (updateError) {
-                    reject(new DatabaseError(updateError));
-                } else {
-                    resolve(result);
+            connection.query(
+                query,
+                (updateError: mysql.QueryError | null, result: mysql.OkPacket, _: Array<mysql.FieldPacket>) => {
+                    if (updateError) {
+                        reject(new DatabaseError(updateError));
+                    } else {
+                        resolve(result);
+                    }
                 }
-            });
+            );
         });
     }
 
@@ -182,13 +196,16 @@ export default class Database extends AsyncModule {
         console.log(query);
         const connection: mysql.PoolConnection = await Database.getConnection();
         return new Promise<mysql.OkPacket>((resolve, reject) => {
-            connection.query(query, (deleteError: mysql.QueryError, result: mysql.OkPacket) => {
-                if (deleteError) {
-                    reject(new DatabaseError(deleteError));
-                } else {
-                    resolve(result);
+            connection.query(
+                query,
+                (deleteError: mysql.QueryError | null, result: mysql.OkPacket, _: Array<mysql.FieldPacket>) => {
+                    if (deleteError) {
+                        reject(new DatabaseError(deleteError));
+                    } else {
+                        resolve(result);
+                    }
                 }
-            });
+            );
         });
     }
 }

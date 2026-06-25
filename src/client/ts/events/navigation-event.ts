@@ -1,5 +1,5 @@
 import SyntheticEventImpl from '@client/events/synthetic-event-impl';
-import { NavNode } from 'types/nav';
+import { NavNode } from 'nav-types';
 interface NavigationEventDetail {
     location: NavNode;
 }
