@@ -5,11 +5,11 @@ import jwt from 'jsonwebtoken';
 const PRIVATE_KEY = fs.readFileSync(process.env.JWT_PRIVATE_KEY_FILE);
 const PUBLIC_KEY = fs.readFileSync(process.env.JWT_PUBLIC_KEY_FILE);
 const SIGN_OPTIONS: jwt.SignOptions = {
-    algorithm: 'RS256',
+    algorithm: 'ES256',
     expiresIn: Constants.SESSION.DURATION_SECONDS
 };
 const VERIFY_OPTIONS: jwt.VerifyOptions = {
-    algorithms: ['RS256'],
+    algorithms: ['ES256'],
     maxAge: Constants.SESSION.DURATION_SECONDS
 };
 
