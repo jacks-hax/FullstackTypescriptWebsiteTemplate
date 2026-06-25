@@ -24,12 +24,15 @@ async function login(request: Request, response: Response) {
 
         const inputUser = User.from(request.body);
 
+        const password = inputUser.Password;
+        delete inputUser.Password;
         // Validate that request body only has email and password fields
-        Utils.validateFields(inputUser, [User.getDescribe().fieldMap.Email]);
+        const userFieldMap = User.getDescribe().fieldMap;
+        Utils.validateFields(inputUser, [userFieldMap.Email]);
 
         // Validate password credentials
         const storedUser: User = await UserRepository.getUserForAuthentication(inputUser.Email!);
-        if (!Crypto.verifyPassword(inputUser.Password!, storedUser.Password!)) {
+        if (!Crypto.verifyPassword(password!, storedUser.Password!)) {
             throw new Error(Constants.ERROR_MESSAGES.INVALID_USER_CREDENTIALS);
         }
 

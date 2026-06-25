@@ -16,7 +16,7 @@ export default class UserRepository {
      */
     public static async getUserForAuthentication(email: string): Promise<User> {
         const userRecords = await Database.query(
-            `SELECT Id, UserCredential.Password FROM User
+            `SELECT User.Id, UserCredential.Value AS Password FROM User
             LEFT JOIN UserCredential ON User.Id = UserCredential.UserId
             WHERE UserCredential.Type = 'password'
                 AND UserCredential.IsActive = true
