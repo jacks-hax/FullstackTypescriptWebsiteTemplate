@@ -150,7 +150,6 @@ export default class MariaDBAdmin {
         );
         Object.keys(formattedTemplateData).forEach((key) => {
             if (!sql.includes(key)) {
-                console.log('sql does not contain key', key);
                 return;
             }
             const value = formattedTemplateData[key];
