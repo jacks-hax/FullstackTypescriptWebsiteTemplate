@@ -154,8 +154,8 @@ class Client {
         if (!this._tsproject) {
             const tsconfig = JSON.parse(fs.readFileSync('tsconfig.json').toString());
             tsconfig.exclude.push('./src/server/**/*');
-            tsconfig.compilerOptions.target = 'ES5';
-            tsconfig.compilerOptions.lib = ['ES5', 'ES6', 'DOM'];
+            tsconfig.compilerOptions.target = 'ES6';
+            tsconfig.compilerOptions.lib = ['ES6', 'DOM'];
             tsconfig.compilerOptions.moduleResolution = 'bundler';
             const tsconfigFile = path.resolve('tsconfig.client.json');
             fs.writeFileSync(tsconfigFile, JSON.stringify(tsconfig));
@@ -330,7 +330,8 @@ class Server {
             Server.initalClean,
             Server.compile,
             Server.portEnvironmentVariables,
-            Server.resolveServerImports
+            Server.resolveServerImports,
+            Server.generateSecrets
         ];
         if (ARGS.WATCH) {
             tasks.push(Server.watch);
@@ -344,9 +345,10 @@ class Server {
         if (!this._tsconfig) {
             const tsconfig = JSON.parse(fs.readFileSync('tsconfig.json').toString());
             tsconfig.exclude.push('./src/client/**/*');
-            tsconfig.compilerOptions.target = 'ES2020';
             tsconfig.compilerOptions.lib = ['ES2020'];
-            tsconfig.compilerOptions.moduleResolution = 'node';
+            tsconfig.compilerOptions.moduleResolution = 'bundler';
+            tsconfig.compilerOptions.module = 'preserve';
+            tsconfig.compilerOptions.target = 'es2022';
             const tsconfigFile = path.resolve('tsconfig.server.json');
             fs.writeFileSync(tsconfigFile, JSON.stringify(tsconfig));
             this._tsproject = typescript.createProject(tsconfigFile);
@@ -356,6 +358,9 @@ class Server {
     }
 
     static initalClean() {
+        if (!fs.existsSync(OUT_DIR_SERVER)) {
+            return gulp.src(SRC_DIR_SERVER);
+        }
         const filesToClean = fs
             .readdirSync(OUT_DIR_SERVER)
             .map((dir) => path.resolve(dir))
@@ -422,7 +427,8 @@ class Server {
             // Assume each alias only maps to one local path. Remove tailing slash and/or wildcard from this path
             const localPath = Server.tsproject.options.paths[pathAlias]?.[0]
                 ?.replace(/(\/\*|\/|\*)$/g, '')
-                ?.replace(/^\.\//, '');
+                ?.replace(/^\.\//, '')
+                ?.replace(/src\//, '');
             if (!localPath) {
                 return '';
             }
@@ -476,6 +482,20 @@ class Server {
                 })
             )
             .pipe(gulp.dest(OUT_DIR_SERVER));
+    }
+
+    static async generateSecrets() {
+        const keyPair = crypto.generateKeyPairSync('ec', {
+            namedCurve: 'P-256',
+            publicKeyEncoding: {
+                type: 'spki',
+                format: 'pem'
+            },
+            privateKeyEncoding: {
+                type: 'sec1',
+                format: 'pem'
+            }
+        });
     }
 
     /**
