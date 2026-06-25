@@ -62,6 +62,13 @@ const OUT_DIR = path.resolve(__dirname, 'dist');
 const OUT_DIR_CLIENT = path.resolve(OUT_DIR, 'public');
 const OUT_DIR_SERVER = OUT_DIR;
 
+const SECRETS_DIR = path.resolve(OUT_DIR, '.private');
+
+// Leaving these hardcoded since the paths of these files is arbitrary
+const JWT_KEYS_DIR = path.resolve(SECRETS_DIR, 'jwt');
+const JWT_PRIVATE_KEY_FILE = path.resolve(JWT_KEYS_DIR, 'private-key.pem');
+const JWT_PUBLIC_KEY_FILE = path.resolve(JWT_KEYS_DIR, 'public-key.pem');
+
 if (!fs.existsSync(OUT_DIR)) {
     fs.mkdirSync(OUT_DIR);
 }
@@ -485,6 +492,14 @@ class Server {
     }
 
     static async generateSecrets() {
+        if (!fs.existsSync(JWT_KEYS_DIR)) {
+            fs.mkdirSync(JWT_KEYS_DIR, {
+                recursive: true
+            });
+        }
+        if (fs.existsSync(JWT_PUBLIC_KEY_FILE)) {
+            return;
+        }
         const keyPair = crypto.generateKeyPairSync('ec', {
             namedCurve: 'P-256',
             publicKeyEncoding: {
@@ -496,6 +511,8 @@ class Server {
                 format: 'pem'
             }
         });
+        fs.writeFileSync(JWT_PUBLIC_KEY_FILE, keyPair.publicKey);
+        fs.writeFileSync(JWT_PRIVATE_KEY_FILE, keyPair.privateKey);
     }
 
     /**
