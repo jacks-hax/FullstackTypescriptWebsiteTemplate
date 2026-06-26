@@ -5,12 +5,12 @@
     "exclude": ["sql/node_modules", "dist"],
     "compilerOptions": {
         "jsx": "react",
-        "target": "ES2020",
+        "target": "ES2021",
         "rootDir": "./src",
         "module": "ESNext",
         "moduleResolution": "bundler",
         "typeRoots": ["sql/node_modules/@types", "src/types"],
-        "lib": ["ES2020", "DOM"],
+        "lib": ["ES2021", "DOM"],
         "paths": {
             "@client/*": ["./src/client/ts/*"],
             "@styles/*": ["./src/client/scss/*"],
