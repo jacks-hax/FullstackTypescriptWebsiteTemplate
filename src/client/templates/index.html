@@ -2,12 +2,22 @@
 <html>
     <head>
         <meta charset="UTF-8" />
-        <title>Fullstack Typescript Starter Kit</title>
-        <!--TODO: Look up <link rel=""> tag options-->
+        <meta name="application-name" content="{{!application_name}}" lang="en" />
+        <meta name="description" content="{{!description}}" lang="en" />
+        <meta name="theme-color" content="{{!theme_color}}" />
+        <meta name="generator" content="jack" />
+        <meta name="publisher" content="jack" />
+        <meta name="creator" content="jack" />
+        <title>{{!title}}</title>
+        <link rel="icon" href="favicon.ico" />
+        <link rel="pingback" href="/pingback" />
+        <link rel="canonical" href="https://{{!host}}/{{!canonical_path}}" />
+        <link rel="preload" href="static/js/vendors.min.js" as="script" />
+        <link rel="preload" href="static/js/runtime.min.js" as="script" />
         <link rel="stylesheet" href="static/css/main.min.css" />
         <script src="static/js/vendors.min.js"></script>
         <script src="static/js/runtime.min.js"></script>
-        <script src="static/js/pages/login/index.min.js"></script>
+        <script src="static/js/pages/{{!page}}/index.min.js"></script>
     </head>
     <body>
         <div id="root"></div>

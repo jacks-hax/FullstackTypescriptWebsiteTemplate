@@ -11,7 +11,20 @@ export default class Constants {
 
     public static readonly HEADERS = class {
         public static readonly CLIENT_ID = 'x-application-client-id';
+        public static readonly CONTENT_TYPE = 'content-type';
+        public static readonly CONTENT_LENGTH = 'content-length';
     };
+
+    public static readonly CONTENT_TYPES = Object.freeze({
+        JSON: 'application/json',
+        JS: 'text/javascript',
+        CSS: 'text/css',
+        HTML: 'text/html',
+        TXT: 'text/plain',
+        FORM_URLENCODED: 'application/x-www-form-urlencoded',
+        FORM_MULTIPART: 'multipart/form-data',
+        OCTET_STREAM: 'application/octet-stream'
+    });
 
     public static readonly URL = class {
         public static readonly AUTH = '/auth';

@@ -301,7 +301,8 @@ const onContainerRender = (handle: ToastContainerHandle | null) => {
 
 // Generate a wrapper for the toast container and render it
 const container = document.createElement('div');
-document.body.appendChild(container);
+debugger;
+window.document.body.appendChild(container);
 createRoot(container).render(<ToastContainer ref={onContainerRender} />);
 
 // Export proxies to the toast container handle methods. If the container is not yet rendered, store the method calls in a queue to be executed when the container is rendered.

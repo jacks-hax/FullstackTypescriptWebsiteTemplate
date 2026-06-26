@@ -70,4 +70,13 @@ export default class Utils {
         });
         response.status(httpStatusCode).json(jsonapiPayload);
     }
+
+    public static getContentType(filename: string) {
+        const parts = filename.split('.');
+        const extension = parts[parts.length - 1].toUpperCase() as keyof typeof Constants.CONTENT_TYPES;
+        if (!!Constants.CONTENT_TYPES[extension]) {
+            return Constants.CONTENT_TYPES[extension];
+        }
+        return Constants.CONTENT_TYPES.OCTET_STREAM;
+    }
 }
