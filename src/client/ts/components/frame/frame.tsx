@@ -4,7 +4,7 @@ import * as React from 'react';
 import purify from 'dompurify';
 
 // Partial components
-import NavigationMenu from '@client/pages/frame/navigation-menu';
+import NavigationMenu from '@client/components/frame/navigation-menu';
 import Spinner from '@client/components/spinner';
 
 // Events & Toasts

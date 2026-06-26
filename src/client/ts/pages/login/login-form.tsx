@@ -12,18 +12,18 @@ import Toast, { ToastProps } from '@client/components/toast';
 
 // Types & Models
 import JsonApiException from '@client/models/json-api-exception';
-import { LoginForm } from 'form-types';
+import { LoginForm as LoginFormData } from 'form-types';
 
 // Http webservice client
 import AppService from '@client/services/app-service';
 
 // Utilities
 
-export interface ContactSupportFormProps {
+export interface LoginFormProps {
     csrfToken: string;
 }
 
-export default function ContactSupportForm(props: ContactSupportFormProps): React.JSX.Element {
+export default function LoginForm(props: LoginFormProps): React.JSX.Element {
     /**
      * ------------------------------------------
      * ---------------- STATE -------------------
@@ -32,7 +32,7 @@ export default function ContactSupportForm(props: ContactSupportFormProps): Reac
     const [isValid, setIsValid] = React.useState<boolean>(false);
     const [isLoading, setIsLoading] = React.useState<boolean>(false);
     const [linkArrowSvg, setLinkArrowSvg] = React.useState<string>('');
-    const [formData, setFormData] = React.useState<LoginForm>({
+    const [formData, setFormData] = React.useState<LoginFormData>({
         username: '',
         password: ''
     });
@@ -42,7 +42,7 @@ export default function ContactSupportForm(props: ContactSupportFormProps): Reac
      * ----------------- REFS -------------------
      * ------------------------------------------
      */
-    const inputRefs: { [key in keyof LoginForm]: React.RefObject<AbstractInputHandle | null> } = {
+    const inputRefs: { [key in keyof LoginFormData]: React.RefObject<AbstractInputHandle | null> } = {
         username: React.useRef<AbstractInputHandle | null>(null),
         password: React.useRef<AbstractInputHandle | null>(null)
     };
@@ -123,7 +123,7 @@ export default function ContactSupportForm(props: ContactSupportFormProps): Reac
             if (error instanceof JsonApiException) {
                 error.payload.errors?.forEach((error) => {
                     error.fields?.forEach((field) => {
-                        inputRefs[field as keyof LoginForm]?.current?.setCustomValidity(error.detail);
+                        inputRefs[field as keyof LoginFormData]?.current?.setCustomValidity(error.detail);
                     });
                 });
             }

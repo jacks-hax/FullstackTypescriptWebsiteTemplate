@@ -40,16 +40,14 @@ console.log(Object.keys(STATIC_CACHE));
 //const PAGES_DIR = path.resolve(__dirname, '../../public/static/js/pages');
 //const PAGES = fs.readdirSync(PAGES_DIR);
 
-function sendError(response: Response, statusCode: number) {
+function sendError(response: Response, statusCode: number): void {
     const renderedError = render(statusCode.toString());
     console.error('Sending error', statusCode, renderedError);
-    response
-        .setHeader(Constants.HEADERS.CONTENT_TYPE, Constants.CONTENT_TYPES.HTML)
-        .status(statusCode)
-        .send(renderedError);
+    response.setHeader(Constants.HEADERS.CONTENT_TYPE, Constants.CONTENT_TYPES.HTML);
+    response.status(statusCode).send(renderedError);
 }
 
-function render(path: string, page?: string) {
+function render(path: string, page?: string): string {
     return TEMPLATE.replaceAll('{{!canonical_path}}', path).replaceAll('{{!page}}', page ?? path.replace(/^\//, ''));
 }
 
@@ -57,16 +55,16 @@ export default function (request: Request, response: Response) {
     try {
         let requestPath = request.path.replaceAll('..', '');
         while (requestPath.includes('//')) {
-            requestPath.replaceAll('//', '/');
+            requestPath = requestPath.replaceAll('//', '/');
         }
-        const contentType = Utils.getContentType(path.basename(requestPath));
-        response.setHeader(Constants.HEADERS.CONTENT_TYPE, contentType);
         if (requestPath.length > 64) {
             sendError(response, 404);
         }
 
         console.log('requestPath:', requestPath);
         if (requestPath.startsWith('/static')) {
+            const contentType = Utils.getContentType(path.basename(requestPath));
+            response.setHeader(Constants.HEADERS.CONTENT_TYPE, contentType);
             if (!!STATIC_CACHE[requestPath]) {
                 response.status(200).send(STATIC_CACHE[requestPath]);
             } else {
@@ -78,6 +76,7 @@ export default function (request: Request, response: Response) {
                 }
             }
         } else {
+            response.setHeader(Constants.HEADERS.CONTENT_TYPE, Constants.CONTENT_TYPES.HTML);
             response.status(200).send(render(requestPath));
         }
     } catch (error) {

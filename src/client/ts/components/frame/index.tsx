@@ -3,7 +3,7 @@ import * as React from 'react';
 import { createRoot } from 'react-dom/client';
 
 // Page Components
-import Frame from '@client/pages/frame/frame';
+import Frame from '@client/components/frame/frame';
 
 // Utilities
 import * as EventUtils from '@client/events/utils';
