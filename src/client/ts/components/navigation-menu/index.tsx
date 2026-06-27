@@ -14,7 +14,7 @@ import { NavNode } from 'nav-types';
 
 export interface FrameWindow extends AppWindow {
     AppData: WindowData & {
-        navigationData: Array<NavNode>;
+        navigationNodes: Array<NavNode>;
         currentLocation: NavNode;
         htmlContent: string;
     };
@@ -32,13 +32,7 @@ try {
     document.body.style.overflowY = 'hidden';
 
     // Render the ContactSales form component
-    root.render(
-        <Frame
-            navigationData={window.AppData.navigationData}
-            htmlContent={window.AppData.htmlContent}
-            currentLocation={window.AppData.currentLocation}
-        />
-    );
+    root.render(<Frame></Frame>);
 
     // Prevent the page from scrolling down when the space key is pressed
     window.addEventListener('keydown', function (e: Event) {

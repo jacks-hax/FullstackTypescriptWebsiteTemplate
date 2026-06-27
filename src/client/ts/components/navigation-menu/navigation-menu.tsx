@@ -20,7 +20,7 @@ import { DirectoryNode, NavNode } from 'nav-types';
 import toast from '@client/components/toast';
 
 export interface NavigationMenuProps {
-    navigationData: Array<NavNode>;
+    navigationNodes: Array<NavNode>;
     currentLocation: NavNode;
     onNavigate: (location: NavNode) => void;
 }
@@ -100,7 +100,7 @@ function NavigationMenu(props: NavigationMenuProps, ref: React.ForwardedRef<HTML
      */
 
     const navigate = (id: string) => {
-        const node = NavUtils.findNode(id, props.navigationData);
+        const node = NavUtils.findNode(id, props.navigationNodes);
         if (!node) {
             toast.showToast({
                 title: 'Error',
@@ -199,7 +199,7 @@ function NavigationMenu(props: NavigationMenuProps, ref: React.ForwardedRef<HTML
 
                 <div ref={scrollWrapperRef} className='overflow-auto' style={{ height: scrollWrapperHeight }}>
                     <nav className='flex-column align-items-stretch'>
-                        <nav className='nav nav-pills flex-column'>{renderNodes(props.navigationData)}</nav>
+                        <nav className='nav nav-pills flex-column'>{renderNodes(props.navigationNodes)}</nav>
                     </nav>
                 </div>
             </div>
@@ -250,7 +250,7 @@ function NavigationMenu(props: NavigationMenuProps, ref: React.ForwardedRef<HTML
 
     const mobileNavMenu = (
         <div ref={ref} className='col-auto article_side-bar'>
-            <div ref={scrollWrapperRef}>{renderNodes(props.navigationData)}</div>
+            <div ref={scrollWrapperRef}>{renderNodes(props.navigationNodes)}</div>
         </div>
     );
 

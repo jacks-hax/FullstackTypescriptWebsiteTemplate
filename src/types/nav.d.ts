@@ -6,7 +6,6 @@ declare module 'nav-types' {
         description: string;
         icon: string;
         path: string;
-        parent: string;
         type: 'd' | 'f';
     }
 

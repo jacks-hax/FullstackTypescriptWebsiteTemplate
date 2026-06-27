@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS OrganizationUser (
 CREATE TABLE IF NOT EXISTS Post (
     AuthorId CHAR(255) NOT NULL,
     Title NVARCHAR(255),
-    Body NVARCHAR(8191),
+    Body NVARCHAR(32768),
     CONSTRAINT PostAuthor
         FOREIGN KEY (AuthorId) REFERENCES User(Id)
         ON DELETE CASCADE
