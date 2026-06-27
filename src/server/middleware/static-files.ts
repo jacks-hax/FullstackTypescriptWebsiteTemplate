@@ -4,6 +4,7 @@ import url from 'url';
 import fs from 'fs';
 import Constants from '@constants/shared';
 import Utils from '@utils/utils';
+import StringUtils from '@utils/string';
 
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,12 +17,7 @@ const TEMPLATE_DATA_GLOBAL: Record<string, string> = {
     host: process.env.SERVER_HOST_NAME
 };
 const TEMPLATE_FILE_PATH = path.resolve(PUBLIC_DIR, 'index.html');
-const TEMPLATE_RAW = fs.readFileSync(TEMPLATE_FILE_PATH).toString();
-let TEMPLATE_BUILD = TEMPLATE_RAW;
-Object.keys(TEMPLATE_DATA_GLOBAL).forEach((key) => {
-    TEMPLATE_BUILD = TEMPLATE_BUILD.replaceAll(`{{!${key}}}`, TEMPLATE_DATA_GLOBAL[key]);
-});
-const TEMPLATE = TEMPLATE_BUILD;
+const TEMPLATE_HTML = StringUtils.merge(fs.readFileSync(TEMPLATE_FILE_PATH).toString(), TEMPLATE_DATA_GLOBAL);
 
 const STATIC_DIR = path.resolve(PUBLIC_DIR, 'static');
 const STATIC_CACHE: Record<string, string> = {};
@@ -40,25 +36,32 @@ console.log(Object.keys(STATIC_CACHE));
 //const PAGES_DIR = path.resolve(__dirname, '../../public/static/js/pages');
 //const PAGES = fs.readdirSync(PAGES_DIR);
 
-function sendError(response: Response, statusCode: number): void {
-    const renderedError = render(statusCode.toString());
-    console.error('Sending error', statusCode, renderedError);
-    response.setHeader(Constants.HEADERS.CONTENT_TYPE, Constants.CONTENT_TYPES.HTML);
-    response.status(statusCode).send(renderedError);
+//function sendError(response: Response, statusCode: number): void {
+//const renderedError = render(statusCode.toString());
+//console.error('Sending error', statusCode, renderedError);
+//response.setHeader(Constants.HEADERS.CONTENT_TYPE, Constants.CONTENT_TYPES.HTML);
+//response.status(statusCode).send('fuckoff');
+//}
+
+export function renderHtml(page: string): string {
+    if (page === '/' || page === '') {
+        page = '/home';
+    } else if (!page.startsWith('/')) {
+        page = '/' + page;
+    }
+    console.log('Rendering page:', page);
+    return StringUtils.merge(TEMPLATE_HTML, {
+        canonical_path: page,
+        title: StringUtils.toTitle(page),
+        page
+    });
 }
 
-function render(path: string, page?: string): string {
-    return TEMPLATE.replaceAll('{{!canonical_path}}', path).replaceAll('{{!page}}', page ?? path.replace(/^\//, ''));
-}
-
-export default function (request: Request, response: Response) {
+export default async function serveStaticFile(request: Request, response: Response, next: Function) {
     try {
         let requestPath = request.path.replaceAll('..', '');
         while (requestPath.includes('//')) {
             requestPath = requestPath.replaceAll('//', '/');
-        }
-        if (requestPath.length > 64) {
-            sendError(response, 404);
         }
 
         console.log('requestPath:', requestPath);
@@ -72,15 +75,16 @@ export default function (request: Request, response: Response) {
                 if (fs.existsSync(staticPath) && fs.statSync(staticPath).isFile()) {
                     response.status(200).send(fs.readFileSync(staticPath).toString());
                 } else {
-                    sendError(response, 404);
+                    next();
                 }
             }
         } else {
+            // TODO : Add validation for path here
             response.setHeader(Constants.HEADERS.CONTENT_TYPE, Constants.CONTENT_TYPES.HTML);
-            response.status(200).send(render(requestPath));
+            response.status(200).send(renderHtml(requestPath));
         }
     } catch (error) {
         console.error('Static resolution error:', error);
-        sendError(response, 500);
+        next();
     }
 }

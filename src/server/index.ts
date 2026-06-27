@@ -15,11 +15,16 @@ import API from '@api/index';
 // Initialize Express app
 const app = Express();
 app.disable('x-powered-by');
-app.use(helmet({}));
+app.use(
+    helmet({
+        strictTransportSecurity: true,
+        hidePoweredBy: true
+    })
+);
 app.use(SessionMiddleware);
 app.use(BodyParserMiddleware);
-app.use('/', StaticFiles);
 app.use('/api', API);
+app.use('/', StaticFiles);
 app.use(handle404);
 app.use(handleServerError);
 
