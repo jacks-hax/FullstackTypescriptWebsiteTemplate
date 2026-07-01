@@ -16,6 +16,7 @@
             "@styles/*": ["./src/client/scss/*"],
             "@images/*": ["./src/client/images/*"],
             "@api/*": ["./src/server/api/*"],
+            "@admin/*": ["./src/server/admin/*"],
             "@middleware/*": ["./src/server/middleware/*"],
             "@database/*": ["./src/server/database/*"],
             "@utils/*": ["./src/server/utils/*"],

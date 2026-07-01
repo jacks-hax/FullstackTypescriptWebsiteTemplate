@@ -80,6 +80,7 @@ export default class Constants {
         public static readonly USER_ALREADY_HAS_ID = 'This User already has an Id.';
         public static readonly USER_ALREADY_EXISTS = 'A user with the provided email already exists.';
         public static readonly USER_NOT_FOUND = 'Unable to find a user with the provided {0}: {1}';
+        public static readonly RECORD_NOT_FOUND = 'Unable to find a {0} with the provided {1}: {2}';
         public static readonly REQUIRED_FIELDS_MISSING = 'Missing required field{0}: {1}';
         public static readonly SESSION_NOT_FOUND = 'Session id not found.';
         public static readonly CANNOT_DELETE_RECORD_WITHOUT_ID = 'Cannot delete a record that does not have an Id.';
