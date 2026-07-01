@@ -19,7 +19,6 @@ export interface InputProps extends AbstractInputProps {
     onEnter?: (event: InternalEvents.EnterEvent<HTMLInputElement>) => void;
 }
 
-// See https://developer.salesforce.com/docs/marketing/marketing-cloud/guide/using_regular_expressions_to_validate_email_addresses.html
 const EMAIL_REGEX =
     /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 
