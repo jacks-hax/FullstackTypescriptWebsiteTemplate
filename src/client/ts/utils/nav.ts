@@ -1,14 +1,14 @@
-import { NavNode, DirectoryNode } from 'nav-types';
+import INavNode from '@models/nav';
 
 export default class NavUtils {
-    public static findNode(id: string, nodes: Array<NavNode>): NavNode | null {
-        const getNodeRecursive = (_nodes: Array<NavNode> = []): NavNode | null => {
+    public static findNode(id: string, nodes: Array<INavNode>): INavNode | null {
+        const getNodeRecursive = (_nodes: Array<INavNode> = []): INavNode | null => {
             for (const node of _nodes) {
-                if (node.id === id) {
+                if (node.Id === id) {
                     return node;
                 }
-                if (node.type === 'd') {
-                    const childNode = getNodeRecursive((node as DirectoryNode).nodes);
+                if (!!node.Children?.length) {
+                    const childNode = getNodeRecursive(node.Children);
                     if (childNode) {
                         return childNode;
                     }

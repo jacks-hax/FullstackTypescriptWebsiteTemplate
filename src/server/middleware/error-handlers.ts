@@ -18,7 +18,7 @@ export function handle404(request: Request, response: Response) {
             });
             response.status(404).json(jsonapiResponse);
         } else {
-            response.status(404).send(renderHtml('404'));
+            response.status(404).send(renderHtml('pages', '404'));
         }
     });
 }

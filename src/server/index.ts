@@ -24,7 +24,7 @@ app.use(
 app.use(SessionMiddleware);
 app.use(BodyParserMiddleware);
 app.use('/api', API);
-app.use('/', StaticFiles);
+app.use('/', StaticFiles('pages'));
 app.use(handle404);
 app.use(handleServerError);
 

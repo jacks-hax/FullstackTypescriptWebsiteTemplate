@@ -2,12 +2,7 @@ import Constants from '@constants/shared';
 import StringUtils from '@utils/string';
 import GlobalDescribe, { TableDescribe } from '@database/describe';
 import { randomUUID } from 'crypto';
-
-export interface IBaseModel {
-    Id?: string;
-    CreatedTimestamp?: number;
-    LastModifiedTimestamp?: number;
-}
+import IBaseModel from '@models/base';
 
 export default class BaseModel implements IBaseModel {
     public Id?: string;

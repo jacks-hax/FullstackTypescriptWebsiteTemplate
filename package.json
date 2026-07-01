@@ -23,8 +23,10 @@
         "build:server": "gulp --stack server",
         "build:client": "gulp --stack client",
         "server": "node --env-file=./dist/.env ./dist/server/index.js",
+        "server:admin": "node --env-file=./dist/.env ./dist/server/admin/index.js",
         "parsejwt": "node bin/parse-jwt.js",
-        "start": "npm run build && npm run server"
+        "start": "npm run build && npm run server",
+        "start:admin": "npm run build && npm run server:admin"
     },
     "devDependencies": {
         "@babel/plugin-transform-typescript": "^8.0.1",

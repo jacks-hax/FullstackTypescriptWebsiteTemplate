@@ -3,15 +3,13 @@ import JsonApiException from '@client/models/json-api-exception';
 import { JsonApiPayload } from 'jsonapi-types';
 import { LoginForm } from 'form-types';
 
-export default class AppService {
-    private client: HttpClient;
-
+export default class AppService extends HttpClient {
     constructor() {
-        this.client = new HttpClient(window.location.protocol + '//' + window.location.hostname);
+        super(window.location.protocol + '//' + window.location.hostname);
     }
 
     public setCSRFToken(token: string): void {
-        this.client.setHeader('X-CSRF-Token', token);
+        this.setHeader('X-CSRF-Token', token);
     }
 
     /**
@@ -20,7 +18,7 @@ export default class AppService {
      * @returns {Promise<JsonApiPayload>}
      */
     public async login(formData: LoginForm): Promise<JsonApiPayload> {
-        const response = await this.client.post('/v1/api/login', {
+        const response = await this.post('/v1/api/login', {
             username: formData.username,
             password: formData.password
         });

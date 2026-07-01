@@ -4,10 +4,10 @@ import * as React from 'react';
 import { subscribe, unsubscribe } from '@client/events/pub-sub';
 
 // Types
-import type { Header as HeaderProps, NavMenuHandle } from 'header-types';
-import { DirectoryNode, NavNode } from 'nav-types';
+import { IHeader } from '@models/window';
+import INavNode from '@models/nav';
 
-function MobileMenu(props: HeaderProps, ref: React.ForwardedRef<NavMenuHandle>): React.JSX.Element {
+function MobileMenu(props: IHeader): React.JSX.Element {
     /**
      * ----------------------------------------
      * -------------- STATE -------------------
@@ -15,7 +15,7 @@ function MobileMenu(props: HeaderProps, ref: React.ForwardedRef<NavMenuHandle>):
      */
 
     const [showMobileMenu, setShowMobileMenu] = React.useState<boolean>(false);
-    const [menuItems, setMenuItems] = React.useState<Array<NavNode>>(props.menuItems);
+    const [menuItems, setMenuItems] = React.useState<Array<INavNode>>(props.menuItems);
     const [overrideMenuComponent, setMenuComponent] = React.useState<React.JSX.Element | null>(null);
     const [widgetComponent, setWidgetComponent] = React.useState<React.JSX.Element | null>(null);
 
@@ -95,39 +95,36 @@ function MobileMenu(props: HeaderProps, ref: React.ForwardedRef<NavMenuHandle>):
         };
     }, []);
 
-    // The handle currently does nothing, but if we needed to expose api methods, we would do that here
-    React.useImperativeHandle(ref, () => ({}));
-
     /**
      * ----------------------------------------
      * ------------ RENDERING -----------------
      * ----------------------------------------
      */
 
-    const renderMenuItems = (items: Array<NavNode>): React.JSX.Element => {
+    const renderMenuItems = (items: Array<INavNode>): React.JSX.Element => {
         return (
             <React.Fragment>
                 {items.map((menuItem) => {
                     let children: Array<React.JSX.Element> = [];
-                    if (menuItem.type === 'd') {
-                        children = (menuItem as DirectoryNode).nodes.map((child) => (
+                    if (!!menuItem.Children?.length) {
+                        children = menuItem.Children.map((child) => (
                             <li
-                                key={child.id}
+                                key={child.Id}
                                 className='list-group-item d-flex justify-content-between align-items-center border-0'
-                                data-path={child.path}
+                                data-url={child.Url}
                                 data-is-link
                                 onClick={handleClickMenuItem}
                             >
-                                {child.icon && (
+                                {child.Icon && (
                                     <div className='row'>
                                         <div className='col-auto me-2'>
-                                            <img src={child.icon} alt={child.label} />
+                                            <img src={child.Icon} alt={child.Title} />
                                         </div>
                                     </div>
                                 )}
                                 <div className='col'>
-                                    <h5>{child.label}</h5>
-                                    {child.description && <p>{child.description}</p>}
+                                    <h5>{child.Title}</h5>
+                                    {child.Description && <p>{child.Description}</p>}
                                 </div>
                             </li>
                         ));
@@ -136,25 +133,25 @@ function MobileMenu(props: HeaderProps, ref: React.ForwardedRef<NavMenuHandle>):
                     const hasChildren = children.length > 0;
 
                     return (
-                        <div key={menuItem.id} className='accordion-item'>
-                            <h2 className='accordion-header' title={menuItem.label}>
+                        <div key={menuItem.Id} className='accordion-item'>
+                            <h2 className='accordion-header' title={menuItem.Title}>
                                 <button
                                     className={`accordion-button collapsed ${hasChildren ? '' : 'no-children'}`}
                                     type='button'
                                     data-bs-toggle='collapse'
-                                    data-bs-target={`#accordion-${menuItem.id}`}
-                                    data-path={menuItem.path}
+                                    data-bs-target={`#accordion-${menuItem.Id}`}
+                                    data-href={menuItem.Url}
                                     data-is-link={!hasChildren}
                                     aria-expanded='false'
-                                    aria-controls={`accordion-${menuItem.id}`}
+                                    aria-controls={`accordion-${menuItem.Id}`}
                                     onClick={handleClickMenuItem}
                                 >
-                                    {menuItem.label}
+                                    {menuItem.Title}
                                 </button>
                             </h2>
                             {hasChildren && (
                                 <div
-                                    id={`accordion-${menuItem.id}`}
+                                    id={`accordion-${menuItem.Id}`}
                                     className='accordion-collapse collapse'
                                     data-bs-parent='#mobile-nav-accordion'
                                 >
@@ -219,6 +216,7 @@ function MobileMenu(props: HeaderProps, ref: React.ForwardedRef<NavMenuHandle>):
                                     </div>
                                 )}
                             </div>
+                            {/*
                             <div className='test-footer text-center'>
                                 <div className='row g-2 text-align-center'>
                                     <div className='col-12'>
@@ -232,6 +230,7 @@ function MobileMenu(props: HeaderProps, ref: React.ForwardedRef<NavMenuHandle>):
                                     </div>
                                 </div>
                             </div>
+                            */}
                         </div>
                     </div>
                 )}

@@ -1,15 +1,8 @@
 /**
  * Post data model representation
  */
-import BaseModel, { IBaseModel } from '@database/models/base';
-
-export interface IPost extends IBaseModel {
-    Status?: string;
-    Title?: string;
-    Slug?: string;
-    AuthorId?: string;
-    Body?: string;
-}
+import BaseModel from '@database/models/base';
+import IPost from '@models/post';
 
 export default class Post extends BaseModel implements IPost {
     public Status?: string;

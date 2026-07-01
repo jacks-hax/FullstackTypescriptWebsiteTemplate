@@ -15,13 +15,22 @@ export default class PoseRepository {
         const fields = Post.getDescribe()
             .fields.map((field) => field.name)
             .join(',');
-        const postRecords = await Database.query(`SELECT ${fields} FROM User WHERE Id = ? LIMIT 1;`, [id]);
+        const postRecords = await Database.query(`SELECT ${fields} FROM Post WHERE Id = ? LIMIT 1;`, [id]);
         if (!postRecords.length) {
             return null;
         }
         console.log('Post Record:', postRecords);
         const post = Post.from(postRecords[0]);
         return post;
+    }
+
+    public static async listPosts(): Promise<Array<Post>> {
+        const fields = Post.getDescribe()
+            .fields.map((field) => field.name)
+            .join(',');
+        const postRecords = await Database.query(`SELECT ${fields} FROM Post;`);
+        const postModels = postRecords.map((record) => Post.from(record));
+        return postModels;
     }
 
     /**

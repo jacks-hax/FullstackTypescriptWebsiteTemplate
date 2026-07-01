@@ -1,13 +1,13 @@
 import * as React from 'react';
 
-import { NavNode } from 'nav-types';
+import INavNode from '@models/nav';
 
 // Components
 import Frame from '@client/components/frame/frame';
 import NavigationMenu from '@client/components/navigation-menu/navigation-menu';
 
 export interface HomeScreenProps {
-    navigationNodes: Array<NavNode>;
+    navigationNodes: Array<INavNode>;
 }
 export default function HomeScreen(props: HomeScreenProps) {
     /**
@@ -29,7 +29,7 @@ export default function HomeScreen(props: HomeScreenProps) {
      * ------------ EVENT HANDLERS --------------
      * ------------------------------------------
      */
-    function handleNavigate(node: NavNode) {}
+    function handleNavigate(_: INavNode) {}
 
     /**
      * ------------------------------------------
@@ -40,7 +40,7 @@ export default function HomeScreen(props: HomeScreenProps) {
         <Frame title='test'>
             <NavigationMenu
                 navigationNodes={props.navigationNodes}
-                currentLocation={currentLocationIndexRef.current}
+                currentLocationIndex={currentLocationIndexRef.current}
                 onNavigate={handleNavigate}
             />
             <>

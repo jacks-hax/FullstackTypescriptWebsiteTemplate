@@ -32,9 +32,10 @@ async function getPostById(request: Request, response: Response) {
     }
 }
 
-async function getPosts(request: Request, response: Response) {
+async function getPosts(_: Request, response: Response) {
     try {
-        const 
+        const posts = await PostRepository.listPosts();
+        response.status(200).json(new JsonApiResponse(posts));
     } catch (error) {
         console.error(error);
         Utils.applyErrorToResponse(error, response);

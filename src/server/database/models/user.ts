@@ -1,18 +1,8 @@
 /**
  * User data model representation
  */
-import BaseModel, { IBaseModel } from '@database/models/base';
-
-export interface IUser extends IBaseModel {
-    FirstName?: string;
-    LastName?: string;
-    Email?: string;
-    Phone?: string;
-    Password?: string;
-    EmailVerified?: boolean;
-    IsActive?: boolean;
-    ActivatedDate?: Date;
-}
+import BaseModel from '@database/models/base';
+import IUser from '@models/user';
 
 export default class User extends BaseModel implements IUser {
     public LastName?: string;

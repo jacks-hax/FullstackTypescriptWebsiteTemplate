@@ -12,6 +12,7 @@ const __dirname = path.dirname(__filename);
 
 // Define source, dependencies, and output directories. Output and dependencies directory should be gitignored
 const SRC_DIR = path.resolve(__dirname, 'src/client/ts/pages');
+const SRC_DIR_ADMIN = path.resolve(__dirname, 'src/client/ts/admin-pages');
 
 // Dynamic entry map to pull in all files from the src directory and map them to relative paths in the output directory
 const entryMap = {
@@ -20,20 +21,27 @@ const entryMap = {
 
 /**
  * @description Recursively check for "index" files in the src directory and add them to the entry map
+ * @param {string} rootDir Root directory where entries lie
  * @param {string} fileName File path, relative to the SRC_DIR
  */
-function applyToEntries(fileName) {
-    const absoluteFilePath = path.resolve(SRC_DIR, fileName);
+function applyToEntries(rootDir, fileName) {
+    console.log('Applying to entries:', rootDir, fileName);
+    const absoluteFilePath = path.resolve(rootDir, fileName);
     if (fs.lstatSync(absoluteFilePath).isDirectory()) {
-        fs.readdirSync(absoluteFilePath).forEach((subFileName) => applyToEntries(path.join(fileName, subFileName)));
+        fs.readdirSync(absoluteFilePath).forEach((subFileName) =>
+            applyToEntries(rootDir, path.join(fileName, subFileName))
+        );
     } else if (fileName.match(/index\.(ts|tsx)$/)) {
-        const entry = 'pages/' + fileName.replace(/\.[^/.]+$/, '');
+        const entry = path.basename(rootDir) + '/' + fileName.replace(/\.[^/.]+$/, '');
         if (entry?.length) {
             entryMap[entry] = absoluteFilePath;
         }
     }
 }
-fs.readdirSync(SRC_DIR).forEach((fileName) => applyToEntries(fileName));
+fs.readdirSync(SRC_DIR).forEach((fileName) => applyToEntries(SRC_DIR, fileName));
+fs.readdirSync(SRC_DIR_ADMIN).forEach((fileName) => applyToEntries(SRC_DIR_ADMIN, fileName));
+
+console.log(entryMap);
 
 export default {
     mode: process.env.NODE_ENV || 'development',

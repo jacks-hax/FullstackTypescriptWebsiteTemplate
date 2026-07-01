@@ -10,9 +10,9 @@ import BrowserUtils from '@client/utils/browser';
 import { publish } from '@client/events/pub-sub';
 
 // Types
-import type { Header as HeaderProps } from 'header-types';
+import { IHeader } from '@models/window';
 
-export default function Header(props: HeaderProps): React.JSX.Element {
+export default function Header(props: IHeader): React.JSX.Element {
     /**
      * ----------------------------------------
      * -------------- STATE -------------------

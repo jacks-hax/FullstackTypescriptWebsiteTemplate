@@ -2,26 +2,25 @@ import 'bootstrap';
 import * as React from 'react';
 
 // Types & Models
-import INavNode from '@models/nav';
 import AppWindow, { IAppData } from '@models/window';
+import IPost from '@models/post';
 
 // Utils
 import ReactUtils from '@client/utils/react';
 import * as EventUtils from '@client/events/utils';
-import HomeScreen from './home';
 
-export interface HomeWindow extends AppWindow {
+import PostsPage from './posts-list';
+
+export interface FrameWindow extends AppWindow {
     AppData: IAppData & {
-        navigationNodes: Array<INavNode>;
-        currentLocation: INavNode;
-        htmlContent: string;
+        posts: Array<IPost>;
     };
 }
-declare const window: HomeWindow;
+declare const window: FrameWindow;
 
 try {
     const root = ReactUtils.createRoot('root');
-    root.render(<HomeScreen navigationNodes={window.AppData.navigationNodes} />);
+    root.render(<PostsPage posts={window.AppData.posts} />);
 
     // Prevent the page from scrolling down when the space key is pressed
     window.addEventListener('keydown', function (e: Event) {

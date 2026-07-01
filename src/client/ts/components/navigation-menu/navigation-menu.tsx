@@ -16,13 +16,13 @@ import { EnterEvent } from '@client/events';
 import { publish, subscribe, unsubscribe } from '@client/events/pub-sub';
 
 // Types & Models
-import { DirectoryNode, NavNode } from 'nav-types';
+import INavNode from '@models/nav';
 import toast from '@client/components/toast';
 
 export interface NavigationMenuProps {
-    navigationNodes: Array<NavNode>;
-    currentLocation: NavNode;
-    onNavigate: (location: NavNode) => void;
+    navigationNodes: Array<INavNode>;
+    currentLocationIndex: number;
+    onNavigate: (location: INavNode) => void;
 }
 
 function NavigationMenu(props: NavigationMenuProps, ref: React.ForwardedRef<HTMLDivElement>): React.JSX.Element {
@@ -31,7 +31,7 @@ function NavigationMenu(props: NavigationMenuProps, ref: React.ForwardedRef<HTML
      * ---------------- STATE -------------------
      * ------------------------------------------
      */
-    const [searchResults, setSearchResults] = React.useState<Array<NavNode>>([]);
+    const [searchResults, setSearchResults] = React.useState<Array<INavNode>>([]);
     const [scrollWrapperHeight, setScrollWrapperHeight] = React.useState<number>(document.body.clientHeight);
     const [isMobile, setIsMobile] = React.useState<boolean>(
         BrowserUtils.isMobileBrowser() || BrowserUtils.isMobileScreenSize()
@@ -44,6 +44,7 @@ function NavigationMenu(props: NavigationMenuProps, ref: React.ForwardedRef<HTML
      */
     const scrollWrapperRef = React.useRef<HTMLDivElement>(null);
     const searchBarRef = React.useRef<SearchBarHandle>(null);
+    const currentLocationRef = React.useRef<INavNode | null>(props.navigationNodes[0]);
 
     /**
      * ------------------------------------------
@@ -64,8 +65,11 @@ function NavigationMenu(props: NavigationMenuProps, ref: React.ForwardedRef<HTML
         setSearchResults([]);
     };
 
-    const handleSelectSearchResult = (result: NavNode): void => {
-        navigate(result.id);
+    const handleSelectSearchResult = (result: INavNode): void => {
+        if (!result.Id) {
+            throw new Error('Search result missing Id.');
+        }
+        navigate(result.Id);
     };
 
     const handleClickNavigationItem = (
@@ -153,7 +157,7 @@ function NavigationMenu(props: NavigationMenuProps, ref: React.ForwardedRef<HTML
             activeNavItem.scrollIntoView(true);
             activeNavItem.focus();
         }
-    }, [props.currentLocation, scrollWrapperHeight]);
+    }, [props.currentLocationIndex, scrollWrapperHeight]);
 
     /**
      * ------------------------------------------
@@ -161,115 +165,126 @@ function NavigationMenu(props: NavigationMenuProps, ref: React.ForwardedRef<HTML
      * ------------------------------------------
      */
 
-    if (!isMobile) {
-        const renderNodes = (nodes: Array<NavNode>): React.ReactNode => {
+    if (isMobile) {
+        // We're in a mobile context. Render the mobile nav menu, but don't return it from this function.
+        // The mobile nav menu is sent as an override to the MobileMenu component via the pub-sub system, with the header:mobile:menu:cmp event
+        const renderNodes = (nodes: Array<INavNode>): React.ReactNode => {
+            if (!nodes || nodes.length === 0) {
+                return <p>No Items</p>;
+            }
             return nodes.map((node) => {
-                const isSelected = node.id === props.currentLocation.id;
-                const activeClass = isSelected ? 'active' : '';
-                return (
-                    <React.Fragment key={node.id}>
-                        <a
-                            id={node.id}
-                            href={purify.sanitize(node.path)}
-                            className={`nav-link ms-3 ${activeClass}`}
-                            onClick={handleClickNavigationItem}
-                            dangerouslySetInnerHTML={{
-                                __html: purify.sanitize(node.label)
-                            }}
-                        ></a>
-                        {node.type === 'd' && renderNodes((node as DirectoryNode).nodes)}
-                    </React.Fragment>
-                );
+                if (!node.Id || !node.Url || !node.Title) {
+                    console.error('Invalid node:', node);
+                    return;
+                }
+                if (!!node.Children?.length) {
+                    return (
+                        <div id={node.Id} key={node.Id} className='m-4 ms-4 me-3'>
+                            <h6>{node.Title}</h6>
+                            <nav className='flex-column align-items-stretch accordion accordion-flush'>
+                                <nav className='nav nav-pills flex-column'>{renderNodes(node.Children)}</nav>
+                            </nav>
+                        </div>
+                    );
+                } else {
+                    const isExpanded = currentLocationRef.current != null && node.Id === currentLocationRef.current.Id;
+                    const buttonClassList = `accordion-button no-children ${isExpanded ? '' : 'collapsed'}`;
+                    return (
+                        <div key={node.Id} className='accordion-item'>
+                            <h2 className='accordion-header'>
+                                <button
+                                    type='button'
+                                    className={buttonClassList}
+                                    aria-expanded={isExpanded}
+                                    aria-controls={`accordion-${node.Id}`}
+                                    data-bs-toggle='collapse'
+                                    data-bs-target={`#accordion-${node.Id}`}
+                                    data-path={node.Url}
+                                    onClick={handleClickNavigationItem}
+                                    dangerouslySetInnerHTML={{
+                                        __html: purify.sanitize(node.Title)
+                                    }}
+                                ></button>
+                            </h2>
+                        </div>
+                    );
+                }
             });
         };
-        return (
-            <div ref={ref} className='col-auto border-end article_side-bar'>
-                <div className='border-bottom p-3'>
-                    <SearchBar
-                        ref={searchBarRef}
-                        id='search'
-                        name='search'
-                        variant='input'
-                        searchResults={searchResults}
-                        onSearch={handleSearch}
-                        onSelect={handleSelectSearchResult}
-                        onCollapse={handleCollapseSearchBar}
-                    />
-                </div>
 
-                <div ref={scrollWrapperRef} className='overflow-auto' style={{ height: scrollWrapperHeight }}>
-                    <nav className='flex-column align-items-stretch'>
-                        <nav className='nav nav-pills flex-column'>{renderNodes(props.navigationNodes)}</nav>
-                    </nav>
-                </div>
+        const mobileNavMenu = (
+            <div ref={ref} className='col-auto article_side-bar'>
+                <div ref={scrollWrapperRef}>{renderNodes(props.navigationNodes)}</div>
             </div>
         );
+
+        publish('header:mobile:menu:cmp', mobileNavMenu);
+        publish(
+            'header:mobile:widget:cmp',
+            <SearchBar
+                ref={searchBarRef}
+                id='search'
+                name='search'
+                variant='icon'
+                searchResults={searchResults}
+                onSearch={handleSearch}
+                onSelect={handleSelectSearchResult}
+                onCollapse={handleCollapseSearchBar}
+            />
+        );
+
+        return <></>;
     }
 
-    // We're in a mobile context. Render the mobile nav menu, but don't return it from this function.
-    // The mobile nav menu is sent as an override to the MobileMenu component via the pub-sub system, with the header:mobile:menu:cmp event
-
-    const renderNodes = (nodes: Array<NavNode>): React.ReactNode => {
+    const renderNodes = (nodes: Array<INavNode>): React.ReactNode => {
+        if (!nodes || nodes.length === 0) {
+            return <p>No items</p>;
+        }
         return nodes.map((node) => {
-            if (node.type === 'd') {
-                return (
-                    <div id={node.id} key={node.id} className='m-4 ms-4 me-3'>
-                        <h6>{node.label}</h6>
-                        <nav className='flex-column align-items-stretch accordion accordion-flush'>
-                            <nav className='nav nav-pills flex-column'>
-                                {renderNodes((node as DirectoryNode).nodes)}
-                            </nav>
-                        </nav>
-                    </div>
-                );
-            } else {
-                const isExpanded = props.currentLocation.id === node.id;
-                const buttonClassList = `accordion-button no-children ${isExpanded ? '' : 'collapsed'}`;
-                return (
-                    <div key={node.id} className='accordion-item'>
-                        <h2 className='accordion-header'>
-                            <button
-                                type='button'
-                                className={buttonClassList}
-                                aria-expanded={isExpanded}
-                                aria-controls={`accordion-${node.id}`}
-                                data-bs-toggle='collapse'
-                                data-bs-target={`#accordion-${node.id}`}
-                                data-path={node.path}
-                                onClick={handleClickNavigationItem}
-                                dangerouslySetInnerHTML={{
-                                    __html: purify.sanitize(node.label)
-                                }}
-                            ></button>
-                        </h2>
-                    </div>
-                );
+            if (!node.Id || !node.Url || !node.Title) {
+                console.error('Invalid node:', node);
+                return;
             }
+            const isSelected = node.Id === currentLocationRef.current?.Id;
+            const activeClass = isSelected ? 'active' : '';
+            return (
+                <React.Fragment key={node.Id}>
+                    <a
+                        id={node.Id}
+                        href={purify.sanitize(node.Url ?? '')}
+                        className={`nav-link ms-3 ${activeClass}`}
+                        onClick={handleClickNavigationItem}
+                        dangerouslySetInnerHTML={{
+                            __html: purify.sanitize(node.Title)
+                        }}
+                    ></a>
+                    {!!node.Children?.length && renderNodes(node.Children)}
+                </React.Fragment>
+            );
         });
     };
+    return (
+        <div ref={ref} className='col-auto border-end article_side-bar'>
+            <div className='border-bottom p-3'>
+                <SearchBar
+                    ref={searchBarRef}
+                    id='search'
+                    name='search'
+                    variant='input'
+                    searchResults={searchResults}
+                    onSearch={handleSearch}
+                    onSelect={handleSelectSearchResult}
+                    onCollapse={handleCollapseSearchBar}
+                />
+            </div>
 
-    const mobileNavMenu = (
-        <div ref={ref} className='col-auto article_side-bar'>
-            <div ref={scrollWrapperRef}>{renderNodes(props.navigationNodes)}</div>
+            <div ref={scrollWrapperRef} className='overflow-auto' style={{ height: scrollWrapperHeight }}>
+                <nav className='flex-column align-items-stretch'>
+                    <nav className='nav nav-pills flex-column'>{renderNodes(props.navigationNodes)}</nav>
+                </nav>
+            </div>
         </div>
     );
-
-    publish('header:mobile:menu:cmp', mobileNavMenu);
-    publish(
-        'header:mobile:widget:cmp',
-        <SearchBar
-            ref={searchBarRef}
-            id='search'
-            name='search'
-            variant='icon'
-            searchResults={searchResults}
-            onSearch={handleSearch}
-            onSelect={handleSelectSearchResult}
-            onCollapse={handleCollapseSearchBar}
-        />
-    );
-
-    return <></>;
 }
 
 export default React.forwardRef(NavigationMenu);

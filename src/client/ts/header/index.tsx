@@ -8,7 +8,7 @@ import Header from '@client/header/header';
 import Toast from '@client/components/toast';
 
 // Types
-import AppWindow from 'window-types';
+import AppWindow from '@models/window';
 declare const window: AppWindow;
 
 // Display any toasts that were stored in the cookies when the page was last loaded
@@ -33,13 +33,7 @@ if (scrollY !== 0) {
 try {
     const root = ReactUtils.createRoot('masthead');
 
-    root.render(
-        <Header
-            menuItems={window.AppData.header.menuItems}
-            urls={window.AppData.header.urls}
-            logoUrl={window.AppData.header.logoUrl}
-        />
-    );
+    root.render(<Header menuItems={window.AppData.header.menuItems} logoUrl={window.AppData.header.logoUrl} />);
 } catch (error) {
     console.error(error);
 }

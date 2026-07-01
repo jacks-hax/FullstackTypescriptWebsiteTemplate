@@ -1,7 +1,7 @@
 import SyntheticEventImpl from '@client/events/synthetic-event-impl';
-import { NavNode } from 'nav-types';
+import INavNode from '@models/nav';
 interface NavigationEventDetail {
-    location: NavNode;
+    location: INavNode;
 }
 export default class NavigationEvent<E extends HTMLElement = HTMLElement> extends SyntheticEventImpl<E> {
     detail: NavigationEventDetail;

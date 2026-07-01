@@ -17,7 +17,7 @@ import {
 import Modal, { ModalHeader, ModalContent, ModalHandle } from '@client/components/modal';
 
 // Types
-import { NavNode } from 'nav-types';
+import INavNode from '@models/nav';
 
 // Images
 import searchIcon from '@images/search-icon.svg';
@@ -32,9 +32,9 @@ export interface SearchBarProps extends AbstractInputProps {
     maxLength?: number;
     placeholder?: string;
     variant?: SearchBarVariant;
-    searchResults?: Array<NavNode>;
+    searchResults?: Array<INavNode>;
     onSearch: (event: InternalEvents.EnterEvent<HTMLInputElement>) => void;
-    onSelect: (result: NavNode) => void;
+    onSelect: (result: INavNode) => void;
     onCollapse: () => void;
 }
 
@@ -52,7 +52,7 @@ function SearchBar(props: SearchBarProps, ref: React.ForwardedRef<SearchBarHandl
     const [searchTimeout, setSearchTimeout] = React.useState<NodeJS.Timeout | undefined>(undefined);
     const [showModal, setShowModal] = React.useState(false);
     const [showSearchResults, setShowSearchResults] = React.useState(false);
-    const [searchResults, setSearchResults] = React.useState<Array<NavNode>>(props.searchResults ?? []);
+    const [searchResults, setSearchResults] = React.useState<Array<INavNode>>(props.searchResults ?? []);
 
     const errorMessage = props.messageWhenBadInput ?? 'This value is invalid.';
 
@@ -99,7 +99,7 @@ function SearchBar(props: SearchBarProps, ref: React.ForwardedRef<SearchBarHandl
         event.preventDefault();
         event.stopPropagation();
         const resultId = event.currentTarget.id.replace('sr-', '');
-        const result = props.searchResults?.find((result) => result.id.toString() === resultId);
+        const result = props.searchResults?.find((result) => result.Id?.toString() === resultId);
         if (result) {
             props.onSelect(result);
         }
@@ -295,13 +295,17 @@ function SearchBar(props: SearchBarProps, ref: React.ForwardedRef<SearchBarHandl
                         <h6>Results</h6>
                         <div className='results'>
                             {!!searchResults?.length ? (
-                                searchResults.map((result: NavNode) => {
+                                searchResults.map((result: INavNode) => {
+                                    if (!result.Title || !result.Url) {
+                                        console.error('Invalid node', result);
+                                        return;
+                                    }
                                     return (
                                         <a
                                             className='row m-0 py-3 px-2'
-                                            key={result.id}
-                                            id={`sr-${result.id}`}
-                                            href={purify.sanitize(result.path)}
+                                            key={result.Id}
+                                            id={`sr-${result.Id}`}
+                                            href={purify.sanitize(result.Url)}
                                             onClick={handleSelectResult}
                                         >
                                             <div className='col-auto'>
@@ -312,9 +316,9 @@ function SearchBar(props: SearchBarProps, ref: React.ForwardedRef<SearchBarHandl
                                                 />
                                             </div>
                                             <div className='col'>
-                                                <h6 className='m-0'>{result.label}</h6>
-                                                <p className='m-0'>{result.description}</p>
-                                                <span className='badge mt-2'>{result.path}</span>
+                                                <h6 className='m-0'>{result.Title}</h6>
+                                                <p className='m-0'>{result.Description}</p>
+                                                <span className='badge mt-2'>{result.Url}</span>
                                             </div>
                                         </a>
                                     );

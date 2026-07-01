@@ -10,7 +10,7 @@ import BodyParserMiddleware from '@middleware/body-parser';
 import SessionMiddleware from '@middleware/session';
 import StaticFiles from '@middleware/static-files';
 import Constants from '@constants/shared';
-import API from '@api/index';
+import API from '@admin/api/index';
 
 // Initialize Express app
 const app = Express();
@@ -21,6 +21,10 @@ app.use(
         hidePoweredBy: true
     })
 );
+app.use(SessionMiddleware);
+app.use(BodyParserMiddleware);
+app.use('/api', API);
+app.use('/', StaticFiles('admin-pages'));
 app.use(handle404);
 app.use(handleServerError);
 
