@@ -10,7 +10,7 @@ import BodyParserMiddleware from '@middleware/body-parser';
 import SessionMiddleware from '@middleware/session';
 import StaticFiles from '@middleware/static-files';
 import Constants from '@constants/shared';
-import API from '@api/index';
+import API from '@server/public/api';
 
 // Initialize Express app
 const app = Express();
@@ -24,7 +24,7 @@ app.use(
 app.use(SessionMiddleware);
 app.use(BodyParserMiddleware);
 app.use('/api', API);
-app.use('/', StaticFiles('pages'));
+app.use('/', StaticFiles('public'));
 app.use(handle404);
 app.use(handleServerError);
 

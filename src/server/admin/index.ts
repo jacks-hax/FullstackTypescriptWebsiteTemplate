@@ -8,9 +8,9 @@ import ModuleEventBus, { ModuleEvent } from '@utils/events/module-event-bus';
 import { handle404, handleServerError } from '@middleware/error-handlers';
 import BodyParserMiddleware from '@middleware/body-parser';
 import SessionMiddleware from '@middleware/session';
-import StaticFiles from '@middleware/static-files';
+import AdminStaticPages from '@server/admin/static';
 import Constants from '@constants/shared';
-import API from '@admin/api/index';
+import API from '@server/admin/api';
 
 // Initialize Express app
 const app = Express();
@@ -24,7 +24,7 @@ app.use(
 app.use(SessionMiddleware);
 app.use(BodyParserMiddleware);
 app.use('/api', API);
-app.use('/', StaticFiles('admin-pages'));
+app.use('/', AdminStaticPages);
 app.use(handle404);
 app.use(handleServerError);
 

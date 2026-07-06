@@ -11,8 +11,15 @@ const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Define source, dependencies, and output directories. Output and dependencies directory should be gitignored
-const SRC_DIR = path.resolve(__dirname, 'src/client/ts/pages');
-const SRC_DIR_ADMIN = path.resolve(__dirname, 'src/client/ts/admin-pages');
+const PAGES_DIR = path.resolve(__dirname, 'src/client/ts/pages');
+console.log('wpc gw:', process.env.GATEWAY);
+const GATEWAY = process.env.GATEWAY || 'all';
+console.log('gw:', GATEWAY);
+const GATEWAYS = fs.readdirSync(PAGES_DIR).filter((opt) => opt !== 'shared' && (GATEWAY === 'all' || opt === GATEWAY));
+if (!GATEWAYS.length) {
+    throw new Error(`Invalid gateway specified: ${GATEWAY}`);
+}
+console.log('Gateways:', GATEWAYS);
 
 // Dynamic entry map to pull in all files from the src directory and map them to relative paths in the output directory
 const entryMap = {
@@ -38,8 +45,13 @@ function applyToEntries(rootDir, fileName) {
         }
     }
 }
-fs.readdirSync(SRC_DIR).forEach((fileName) => applyToEntries(SRC_DIR, fileName));
-fs.readdirSync(SRC_DIR_ADMIN).forEach((fileName) => applyToEntries(SRC_DIR_ADMIN, fileName));
+
+for (const gateway of GATEWAYS) {
+    const srcDir = path.resolve(PAGES_DIR, gateway);
+    fs.readdirSync(srcDir).forEach((fileName) => applyToEntries(srcDir, fileName));
+}
+const srcDir = path.resolve(PAGES_DIR, 'shared');
+fs.readdirSync(srcDir).forEach((fileName) => applyToEntries(srcDir, fileName));
 
 console.log(entryMap);
 

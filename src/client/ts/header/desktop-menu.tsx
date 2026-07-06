@@ -72,9 +72,9 @@ export default function DesktopMenu(props: IHeader): React.JSX.Element {
                     if (menuItem.ParentId) {
                         content = (
                             <div className='menu-item-content'>
-                                {menuItem.Icon && (
+                                {menuItem.IconUrl && (
                                     <div className='menu-item-icon'>
-                                        <img src={menuItem.Icon} alt={menuItem.Description} />
+                                        <img src={menuItem.IconUrl} alt={menuItem.Description} />
                                     </div>
                                 )}
                                 <div className='menu-item-details'>

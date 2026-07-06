@@ -6,4 +6,9 @@ export default class Constants {
         public static readonly MFA_SECRET = 'mfa_secret';
         public static readonly JWT = 'jwt';
     };
+
+    public static readonly MENU_ITEM_LOCATION = class {
+        public static readonly HEADER = 'header';
+        public static readonly FOOTER = 'footer';
+    };
 }

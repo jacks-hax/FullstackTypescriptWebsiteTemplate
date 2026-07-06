@@ -115,10 +115,10 @@ function MobileMenu(props: IHeader): React.JSX.Element {
                                 data-is-link
                                 onClick={handleClickMenuItem}
                             >
-                                {child.Icon && (
+                                {child.IconUrl && (
                                     <div className='row'>
                                         <div className='col-auto me-2'>
-                                            <img src={child.Icon} alt={child.Title} />
+                                            <img src={child.IconUrl} alt={child.Title} />
                                         </div>
                                     </div>
                                 )}

@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import Post from '@models/post';
 import Input from '@client/components/input/input';
-import * as InternalEvents from '@client/events/index';
+import * as InternalEvents from '@client/events';
 import { AbstractInputHandle, HTMLAbstractInputElement } from '@client/components/input/peripherals';
 import Spinner from '@client/components/spinner';
 import toast from '@client/components/toast';

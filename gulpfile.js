@@ -26,9 +26,13 @@ import fs from 'fs';
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const PAGES_DIR = path.resolve(__dirname, 'src/client/ts/pages');
+const GATEWAYS = fs.readdirSync(PAGES_DIR).filter((opt) => opt !== 'shared');
+
 /**
  * @typedef {Object} GulpArgs
  * @property {('client'|'server'|'all')} STACK
+ * @property {('public'|'admin'|'all')} GATEWAY
  * @property {boolean} WATCH
  */
 
@@ -42,6 +46,14 @@ const ARGS = CLIReader.parseArgv([
         type: 'enum',
         flags: new Set(['--stack', '-s']),
         enumValues: new Set(['client', 'server', 'all']),
+        defaultValue: 'all'
+    }),
+    new CLIValueConfig({
+        key: 'GATEWAY',
+        label: 'Gateway',
+        type: 'enum',
+        flags: new Set(['--gateway', '-g']),
+        enumValues: new Set(['all', ...GATEWAYS]),
         defaultValue: 'all'
     }),
     new CLIValueConfig({
@@ -137,12 +149,20 @@ function hashFileOrFolder(fileOrFolderPath) {
 
 class Client {
     static get tasks() {
+        //const compilationTasks = [];
+        //if (ARGS.GATEWAY === 'admin' || ARGS.GATEWAY === 'all') {
+        //    compilationTasks.push(Client.compileAdminTs);
+        //}
+        //if (ARGS.GATEWAY === 'public' || ARGS.GATEWAY === 'all') {
+        //    compilationTasks.push(Client.compilePublicTs);
+        //}
         const tasks = [
             Client.initialClean,
             Client.copyImages,
             Client.copyTemplates,
             Client.compileSass,
             Client.minifyCss,
+            //...compilationTasks,
             Client.compileTs,
             Client.minifyJs,
             Client.cleanArtifacts
@@ -156,21 +176,26 @@ class Client {
         return tasks;
     }
 
-    /** @type {typescript.Project} */
-    _tsproject;
-    static get tsproject() {
-        if (!this._tsproject) {
-            const tsconfig = JSON.parse(fs.readFileSync('tsconfig.json').toString());
-            tsconfig.exclude.push('./src/server/**/*');
-            tsconfig.compilerOptions.target = 'ES6';
-            tsconfig.compilerOptions.lib = ['ES6', 'DOM'];
-            tsconfig.compilerOptions.moduleResolution = 'bundler';
-            const tsconfigFile = path.resolve('tsconfig.client.json');
-            fs.writeFileSync(tsconfigFile, JSON.stringify(tsconfig));
-            this._tsproject = typescript.createProject(tsconfigFile);
-            fs.rmSync(tsconfigFile);
+    /** @return {typescript.Project} */
+    static getTsProject() {
+        const tsconfig = JSON.parse(fs.readFileSync('tsconfig.json').toString());
+        tsconfig.include = ['./src/client/ts/pages/shared/'];
+        if (ARGS.GATEWAY === 'all') {
+            fs.readdirSync(path.resolve(SRC_DIR_CLIENT, 'ts/pages')).forEach((gateway) =>
+                tsconfig.include.push(`./src/client/ts/pages/${gateway}/`)
+            );
+        } else {
+            tsconfig.include.push(`./src/client/ts/pages/${ARGS.GATEWAY}`);
         }
-        return this._tsproject;
+        tsconfig.exclude.push('./src/server/**/*');
+        tsconfig.compilerOptions.target = 'ES6';
+        tsconfig.compilerOptions.lib = ['ES6', 'DOM'];
+        tsconfig.compilerOptions.moduleResolution = 'bundler';
+        const tsconfigFile = path.resolve('tsconfig.client.json');
+        fs.writeFileSync(tsconfigFile, JSON.stringify(tsconfig));
+        const tsproject = typescript.createProject(tsconfigFile);
+        fs.rmSync(tsconfigFile);
+        return tsproject;
     }
 
     static initialClean() {
@@ -216,17 +241,19 @@ class Client {
     }
 
     /**
-     * @description Compiles all TS files to JS and bundles react dependencies using webpack
+     * @description Compiles admin TS files to JS and bundles react dependencies using webpack
      * @see tsconfig.json for TypeScript configuration
      * @see webpack.config.js for Webpack configuration
      * @param {function} callback - Callback function to execute after compilation
      * @returns {Promise<void>}
      */
     static async compileTs(callback) {
+        process.env.GATEWAY = ARGS.GATEWAY;
         const webpackConfig = await import(`./webpack.config.js?${cacheBuster++}`);
-        const stream = Client.tsproject
+        const tsproject = Client.getTsProject();
+        const stream = tsproject
             .src()
-            .pipe(Client.tsproject())
+            .pipe(tsproject())
             .js.pipe(webpack(webpackConfig.default))
             .pipe(beautifyCode(BEAUTIFY_CONFIG))
             .pipe(gulp.dest(path.resolve(OUT_DIR_CLIENT_STATIC, 'js')));
@@ -343,9 +370,17 @@ class Client {
 
 class Server {
     static get tasks() {
+        //const compilationTasks = [];
+        //if (ARGS.GATEWAY === 'admin' || ARGS.GATEWAY === 'all') {
+        //    compilationTasks.push(Server.compileAdmin);
+        //}
+        //if (ARGS.GATEWAY === 'public' || ARGS.GATEWAY === 'all') {
+        //    compilationTasks.push(Server.compilePublic);
+        //}
         const tasks = [
             Server.initalClean,
-            Server.compile,
+            ///...compilationTasks,
+            Server.compileTs,
             Server.portEnvironmentVariables,
             Server.resolveServerImports,
             Server.generateSecrets
@@ -356,22 +391,32 @@ class Server {
         return tasks;
     }
 
-    /** @type {typescript.Project} */
-    _tsproject;
-    static get tsproject() {
-        if (!this._tsconfig) {
-            const tsconfig = JSON.parse(fs.readFileSync('tsconfig.json').toString());
-            tsconfig.exclude.push('./src/client/**/*');
-            tsconfig.compilerOptions.lib = ['ES2020'];
-            tsconfig.compilerOptions.moduleResolution = 'bundler';
-            tsconfig.compilerOptions.module = 'preserve';
-            tsconfig.compilerOptions.target = 'es2022';
-            const tsconfigFile = path.resolve('tsconfig.server.json');
-            fs.writeFileSync(tsconfigFile, JSON.stringify(tsconfig));
-            this._tsproject = typescript.createProject(tsconfigFile);
-            fs.rmSync(tsconfigFile);
+    /** @return {typescript.Project} */
+    static getTsProject() {
+        const tsconfig = JSON.parse(fs.readFileSync('tsconfig.json').toString());
+        tsconfig.include = ['./src/constants', './src/models'];
+        fs.readdirSync(SRC_DIR_SERVER)
+            .filter((dir) => !GATEWAYS.includes(dir))
+            .forEach((dir) => tsconfig.include.push(`./src/server/${dir}`));
+        if (ARGS.GATEWAY === 'all') {
+            fs.readdirSync(path.resolve(SRC_DIR_CLIENT, 'ts/pages')).forEach((gateway) =>
+                tsconfig.include.push(`./src/server/${gateway}`)
+            );
+        } else {
+            tsconfig.include.push(`./src/server/${ARGS.GATEWAY}`);
         }
-        return this._tsproject;
+        console.log('includes:', tsconfig.include);
+        //tsconfig.includes = [`./src/server/${srcPath}`];
+        tsconfig.exclude.push('./src/client/**/*');
+        tsconfig.compilerOptions.lib = ['ES2020'];
+        tsconfig.compilerOptions.moduleResolution = 'bundler';
+        tsconfig.compilerOptions.module = 'preserve';
+        tsconfig.compilerOptions.target = 'es2022';
+        const tsconfigFile = path.resolve('tsconfig.server.json');
+        fs.writeFileSync(tsconfigFile, JSON.stringify(tsconfig));
+        const tsproject = typescript.createProject(tsconfigFile);
+        fs.rmSync(tsconfigFile);
+        return tsproject;
     }
 
     static initalClean() {
@@ -386,8 +431,14 @@ class Server {
     }
 
     // Task to compile TypeScript
-    static compile() {
-        return Server.tsproject.src().pipe(Server.tsproject()).js.pipe(gulp.dest(OUT_DIR_SERVER));
+    static compileTs() {
+        const tsproject = Server.getTsProject();
+        return tsproject.src().pipe(tsproject()).js.pipe(gulp.dest(OUT_DIR_SERVER));
+    }
+
+    static compilePublic() {
+        const tsproject = Server.getTsProject('public');
+        return tsproject.src().pipe(tsproject()).js.pipe(gulp.dest(OUT_DIR_SERVER));
     }
 
     // Task to ensure .env file exists for current environment, and copy .env file over to destination folder
@@ -402,7 +453,8 @@ class Server {
 
     // Task to change all import aliases to relative paths
     static resolveServerImports() {
-        const pathAliases = Object.keys(Server.tsproject.options.paths);
+        const tsproject = Server.getTsProject();
+        const pathAliases = Object.keys(Server.getTsProject().options.paths);
 
         // Regex "if" block. e.g. api|database|utils|models
         const pathAliasesRegexSearch = pathAliases.map((p) => p.replace(/^@(.*?)(\/\*)?$/g, '$1')).join('|');
@@ -442,11 +494,11 @@ class Server {
                 return '';
             }
             // Assume each alias only maps to one local path. Remove tailing slash and/or wildcard from this path
-            const localPath = Server.tsproject.options.paths[pathAlias]?.[0]
-                ?.replace(/(\/\*|\/|\*)$/g, '')
-                ?.replace(/^\.\//, '')
-                ?.replace(/src\//, '');
-            if (!localPath) {
+            const srcRelativePath = tsproject.options.paths[pathAlias]?.[0]
+                ?.replace(/(\/\*|\/|\*)$/g, '') // Remove trailing /*
+                ?.replace(/^\.\//, '') // Remove starting ./
+                ?.replace(/src\//, ''); //remove src/
+            if (!srcRelativePath) {
                 return '';
             }
             const modulePathPrefix = path
@@ -455,7 +507,9 @@ class Server {
                 .split('/')
                 .map((x, i) => (i === 0 ? './' : '../'))
                 .join('');
-            return modulePathPrefix + localPath;
+            const fullPath = modulePathPrefix + srcRelativePath;
+            const fullPathAll = path.resolve(path.dirname(filePath), fullPath);
+            return fullPath;
         };
 
         /**
@@ -467,7 +521,7 @@ class Server {
          * @returns {string} Import call with relative path
          */
         const handleReplace = (variableName, rawAlias, moduleProjectPath, fileAbsolutePath) => {
-            moduleProjectPath = addDotJS(moduleProjectPath);
+            //moduleProjectPath = addDotJS(moduleProjectPath);
             let localPath = getLocalPath(rawAlias, fileAbsolutePath);
             if (!localPath) {
                 // Original value with "@" stripped
@@ -475,14 +529,33 @@ class Server {
                     ? `import ${variableName} from '${rawAlias}${moduleProjectPath}'`
                     : `import '${rawAlias}${moduleProjectPath}'`;
             }
-            if (!moduleProjectPath) {
-                // localPath must contain js file. Add .js file ending
-                localPath = addDotJS(localPath);
+            if (moduleProjectPath) {
+                localPath += moduleProjectPath;
             }
-            const result = variableName
-                ? `import ${variableName} from '${localPath}${moduleProjectPath}'`
-                : `import '${localPath}${moduleProjectPath}'`;
-            return result;
+            if (!fs.existsSync(localPath)) {
+                let localPathTmp = addDotJS(localPath);
+                let fullPathTmp = path.resolve(path.dirname(fileAbsolutePath), localPathTmp);
+                if (fs.existsSync(fullPathTmp)) {
+                    localPath = localPathTmp;
+                } else {
+                    console.log(
+                        'unable to locate local js path for ',
+                        fullPathTmp,
+                        'in',
+                        fileAbsolutePath,
+                        'with relative',
+                        localPath
+                    );
+                    localPathTmp = localPath + '/index.js';
+                    fullPathTmp = path.resolve(path.dirname(fileAbsolutePath), localPathTmp);
+                    if (fs.existsSync(fullPathTmp)) {
+                        localPath = localPathTmp;
+                    } else {
+                        throw new Error('Unable to locate local path for ' + fullPathTmp);
+                    }
+                }
+            }
+            return variableName ? `import ${variableName} from '${localPath}'` : `import '${localPath}'`;
         };
 
         // Replace all imports across all js files in the out dir

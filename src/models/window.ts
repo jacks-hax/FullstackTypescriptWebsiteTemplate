@@ -9,7 +9,7 @@ export interface IFooter {
     menuItems: Array<INavNode>;
 }
 
-export interface IAppData {
+export interface IAppData extends Record<string, any> {
     header: IHeader;
     footer: IFooter;
 }

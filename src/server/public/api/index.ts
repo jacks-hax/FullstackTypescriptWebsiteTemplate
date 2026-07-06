@@ -3,8 +3,8 @@
  * @version 1.0.0
  */
 import express from 'express';
-import UsersApi from '@api/users/index';
-import AuthApi from '@api/auth/index';
+import UsersApi from '@server/public/api/users';
+import AuthApi from '@server/public/api/auth';
 
 const router = express.Router();
 
