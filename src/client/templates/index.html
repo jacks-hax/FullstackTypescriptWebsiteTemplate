@@ -15,14 +15,16 @@
         <link rel="preload" href="/static/js/vendors.min.js" as="script" />
         <link rel="preload" href="/static/js/runtime.min.js" as="script" />
         <link rel="stylesheet" href="/static/css/main.min.css" />
+        <script type="text/javascript">
+            console.error('Setting app data');
+            window.AppData = {{!app_data}}
+            console.error(window.AppData);
+        </script>
         <script src="/static/js/vendors.min.js"></script>
         <script src="/static/js/runtime.min.js"></script>
         <script defer src="/static/js/{{!page}}/index.min.js"></script>
     </head>
     <body>
-        <script type="text/javascript">
-            window.AppData = {{!app_data}}
-        </script>
         <div id="root"></div>
     </body>
 </html>

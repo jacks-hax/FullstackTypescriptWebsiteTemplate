@@ -19,19 +19,29 @@ export default class GlobalDescribe extends AsyncModule {
             await this.signalInit();
             const result = await Database.query('SHOW TABLES;');
             const promises: Array<Promise<void>> = [];
-            result.forEach((tableObject) => {
-                const tableName = tableObject[`Tables_in_${process.env.MYSQL_DATABASE}`];
-                promises.push(
-                    Database.query('DESCRIBE ??;', [tableName]).then((fieldDescribes) => {
-                        GlobalDescribe.cache[tableName] = new TableDescribe(
-                            tableName,
-                            fieldDescribes.map((fd) => new FieldDescribe(fd))
-                        );
-                    })
-                );
+            Database.wrap(async () => {
+                result.forEach((tableObject) => {
+                    const tableName = tableObject[`Tables_in_${process.env.MYSQL_DATABASE}`];
+                    const dbg = tableName === 'UserCredentialType';
+                    if (dbg) console.log('pushing promise for ', tableName);
+                    promises.push(
+                        Database.query('DESCRIBE ??;', [tableName])
+                            .then((fieldDescribes) => {
+                                if (dbg) console.log('got cached describe for ', tableName);
+                                GlobalDescribe.cache[tableName] = new TableDescribe(
+                                    tableName,
+                                    fieldDescribes.map((fd) => new FieldDescribe(fd))
+                                );
+                            })
+                            .catch((error) => {
+                                console.error('Failed to describe', tableName, error);
+                            })
+                    );
+                });
+                await Promise.all(promises);
+                console.log('All describes are cached');
+                this.signalReady();
             });
-            await Promise.all(promises);
-            this.signalReady();
         } catch (error) {
             this.signalError(error as Error);
         }

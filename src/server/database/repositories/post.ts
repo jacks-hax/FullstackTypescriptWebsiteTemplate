@@ -5,7 +5,7 @@ import Post from '@database/models/post';
 import StringUtils from '@utils/string';
 import Utils from '@utils/utils';
 
-export default class PoseRepository {
+export default class PostRepository {
     /**
      * @description Get a post record by Id
      * @param id Post Id

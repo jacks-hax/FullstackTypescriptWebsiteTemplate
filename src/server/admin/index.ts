@@ -2,30 +2,28 @@
  * This file defines all exposed api endpoints for admins
  */
 import Express from 'express';
-import helmet from 'helmet';
 
 import ModuleEventBus, { ModuleEvent } from '@utils/events/module-event-bus';
 import { handle404, handleServerError } from '@middleware/error-handlers';
+import { CSPLoader, Helmet } from '@middleware/security';
 import BodyParserMiddleware from '@middleware/body-parser';
 import SessionMiddleware from '@middleware/session';
 import AdminStaticPages from '@server/admin/static';
+import AppData from '@middleware/app-data';
 import Constants from '@constants/shared';
 import API from '@server/admin/api';
 
 // Initialize Express app
 const app = Express();
 app.disable('x-powered-by');
-app.use(
-    helmet({
-        strictTransportSecurity: true,
-        hidePoweredBy: true
-    })
-);
 app.use(SessionMiddleware);
 app.use(BodyParserMiddleware);
 app.use('/api', API);
+app.use(CSPLoader);
+app.use(AppData);
 app.use('/', AdminStaticPages);
 app.use(handle404);
+app.use(Helmet);
 app.use(handleServerError);
 
 // Wait for all async modules to initialize before starting the server

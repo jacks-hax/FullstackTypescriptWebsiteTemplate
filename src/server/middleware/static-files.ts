@@ -43,7 +43,6 @@ export function renderHtml(prefix: string, page: string, data: IAppData & Record
     } else if (!page.startsWith('/')) {
         page = '/' + page;
     }
-    console.log('Rendering page:', prefix, page);
     return StringUtils.merge(TEMPLATE_HTML, {
         canonical_path: page,
         title: StringUtils.toTitle(page),
@@ -74,9 +73,7 @@ function validateStaticFile(rootNode: FileNode, path: string): boolean {
     if (!path?.length || path === '/') {
         path = '/home';
     }
-    console.log('validating', path);
     for (const pathItem of path.split('/')) {
-        console.log('chacking', pathItem, 'in', Object.keys(currentNode));
         if (pathItem.length === 0) continue;
         if (!currentNode[pathItem]) return false;
         if (currentNode[pathItem] === true) return true;

@@ -15,6 +15,7 @@ export type TransactionFunction = () => Promise<any> | any;
 export default class Database extends AsyncModule {
     public static pool: mysql.Pool;
     private static currentConnection: mysql.PoolConnection | null;
+    private static dbg = false;
 
     static {
         Database.init();
@@ -43,13 +44,18 @@ export default class Database extends AsyncModule {
 
     public static async getConnection(): Promise<mysql.PoolConnection> {
         if (Database.currentConnection != null) {
+            if (Database.dbg) console.log('using current connection');
             return Database.currentConnection;
         }
+        if (Database.dbg) console.log('need to get new connection from pool');
         return new Promise<mysql.PoolConnection>((resolve, reject) => {
+            if (Database.dbg) console.log('Inside promize, getting connection now...');
             Database.pool.getConnection((error: NodeJS.ErrnoException | null, connection: mysql.PoolConnection) => {
                 if (error) {
+                    if (Database.dbg) console.log('poolconnnection rejected');
                     reject(error);
                 } else {
+                    if (Database.dbg) console.log('poolconnnection resolved');
                     resolve(connection);
                 }
             });
@@ -68,6 +74,8 @@ export default class Database extends AsyncModule {
                     const error = new TransactionError();
                     error.transactionInitError = transactionInitError;
                     reject(error);
+                    connection.destroy();
+                    return;
                 }
                 try {
                     Database.currentConnection = connection;
@@ -100,6 +108,8 @@ export default class Database extends AsyncModule {
                         }
                         reject(error);
                     });
+                } finally {
+                    connection.destroy();
                 }
             });
         });
@@ -111,10 +121,13 @@ export default class Database extends AsyncModule {
      * @returns Promise that resolves to an array of records resulting from query
      */
     public static async query(query: string, variables: any[] = []): Promise<Array<Record<string, any>>> {
+        Database.dbg = Database.dbg || variables[0] === 'UserCredentialType';
+        if (Database.dbg) console.log('raw query:', query, variables);
         const connection: mysql.PoolConnection = await Database.getConnection();
+        if (Database.dbg) console.log('Got connection');
         return new Promise<Array<Record<string, any>>>((resolve, reject) => {
             const formattedQuery = connection.format(query, variables);
-            console.log('Formatted Query:', formattedQuery);
+            //console.log('Formatted Query:', formattedQuery);
             connection.query(
                 formattedQuery,
                 (
