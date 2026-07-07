@@ -361,10 +361,10 @@ class Client {
             ],
             Client.minifyJs
         );
-        gulp.watch([path.resolve(SRC_DIR, 'ts/**/*'), 'webpack.config.js'], Client.compileTs);
-        gulp.watch([path.resolve(SRC_DIR, 'scss/**/*.scss')], Client.compileSass);
-        gulp.watch([path.resolve(SRC_DIR, 'images/**/*')], Client.copyImages);
-        gulp.watch([path.resolve(SRC_DIR, 'templates/**/*')], Client.copyTemplates);
+        gulp.watch([path.resolve(SRC_DIR_CLIENT, 'ts/**/*'), 'webpack.config.js'], Client.compileTs);
+        gulp.watch([path.resolve(SRC_DIR_CLIENT, 'scss/**/*.scss')], Client.compileSass);
+        gulp.watch([path.resolve(SRC_DIR_CLIENT, 'images/**/*')], Client.copyImages);
+        gulp.watch([path.resolve(SRC_DIR_CLIENT, 'templates/**/*')], Client.copyTemplates);
     }
 }
 
@@ -433,11 +433,6 @@ class Server {
     // Task to compile TypeScript
     static compileTs() {
         const tsproject = Server.getTsProject();
-        return tsproject.src().pipe(tsproject()).js.pipe(gulp.dest(OUT_DIR_SERVER));
-    }
-
-    static compilePublic() {
-        const tsproject = Server.getTsProject('public');
         return tsproject.src().pipe(tsproject()).js.pipe(gulp.dest(OUT_DIR_SERVER));
     }
 
@@ -610,7 +605,7 @@ class Server {
     static watch() {
         gulp.watch(
             [SRC_DIR_SERVER, path.resolve(SRC_DIR_SERVER, 'constants'), path.resolve(SRC_DIR_SERVER, 'models')],
-            Server.compile
+            Server.compileTs
         );
     }
 }

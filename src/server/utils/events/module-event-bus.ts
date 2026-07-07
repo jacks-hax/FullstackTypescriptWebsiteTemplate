@@ -49,7 +49,6 @@ export default class ModuleEventBus {
         if (!ModuleEventBus.listeners[event.type]) {
             return;
         }
-        console.log('publishing', event, 'to', ModuleEventBus.listeners[event.type]);
         Array.from(ModuleEventBus.listeners[event.type]).forEach((listener) => {
             try {
                 listener(event);

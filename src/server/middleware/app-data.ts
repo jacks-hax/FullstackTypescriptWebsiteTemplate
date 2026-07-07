@@ -28,16 +28,13 @@ let refreshCachePromise = new Promise<void>(async (resolve) => {
         return resolve();
     }
     databaseResolve = async () => {
-        console.log('database ready, refresing cache!');
         await refreshCache();
-        console.log(APP_DATA_CACHE);
         return resolve();
     };
 });
 
 export default async function AppData(request: Request, _: Response, next: Function) {
     await refreshCachePromise;
-    console.log('Applying appdata to request');
     request.appData = APP_DATA_CACHE;
     next();
 }

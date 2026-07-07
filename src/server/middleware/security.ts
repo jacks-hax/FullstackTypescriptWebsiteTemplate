@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+//import type { IncomingMessage, ServerResponse } from 'node:http';
 import helmet from 'helmet';
 export const CSPLoader = (_: Request, response: Response, next: Function) => {
     response.cspNonce = crypto.randomUUID();
@@ -6,11 +7,17 @@ export const CSPLoader = (_: Request, response: Response, next: Function) => {
 };
 export const Helmet = helmet({
     strictTransportSecurity: true,
-    hidePoweredBy: true,
-    contentSecurityPolicy: {
-        directives: {
-            'script-src': [(_: Request, response: Response) => `'${response.cspNonce}'`]
-        },
-        useDefaults: true
-    }
+    hidePoweredBy: true
+    //contentSecurityPolicy: {
+    //    directives: {
+    //        'script-src': [
+    //            "'self'",
+    //            (_: IncomingMessage, response: ServerResponse) => {
+    //                console.log('helmet csp custom function:', response.cspNonce);
+    //                return response.cspNonce ?? 'none';
+    //            }
+    //        ]
+    //    },
+    //    useDefaults: true
+    //}
 });

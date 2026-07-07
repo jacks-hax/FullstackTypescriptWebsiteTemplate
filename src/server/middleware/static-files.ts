@@ -26,16 +26,63 @@ const TEMPLATE_HTML = StringUtils.merge(fs.readFileSync(TEMPLATE_FILE_PATH).toSt
 
 const STATIC_DIR = path.resolve(PUBLIC_DIR, 'static');
 const STATIC_CACHE: Record<string, Buffer> = {};
+const STATIC_CACHE_MAX_HEAP = 1000 * 1000 * 10;
+let staticCacheEnabled = false;
 
-function cacheStaticFiles(file: string) {
-    if (fs.statSync(file).isDirectory()) {
-        fs.readdirSync(file).forEach((subFile) => cacheStaticFiles(path.resolve(file, subFile)));
+function countStaticFilesSize(): number {
+    return Object.values(STATIC_CACHE).reduce((sum, file) => sum + file.length, 0);
+}
+
+function cacheStaticFile(filePath: string, fileBuffer: Buffer) {
+    if (!staticCacheEnabled) {
+        return;
+    }
+    // If the new file fits within the cache limits, add it right away
+    if (countStaticFilesSize() + fileBuffer.length < STATIC_CACHE_MAX_HEAP) {
+        STATIC_CACHE[filePath] = fileBuffer;
+        return;
+    }
+    // Otherwise, we need to de-cache a file that will give us enough space to cache the new file
+    let fileToDecache;
+    let sizeJustLargeEnough = STATIC_CACHE_MAX_HEAP + 1;
+    Object.entries(STATIC_CACHE).forEach(([key, cachedBuffer]) => {
+        if (cachedBuffer.length > fileBuffer.length && cachedBuffer.length < sizeJustLargeEnough) {
+            sizeJustLargeEnough = cachedBuffer.length;
+            fileToDecache = key;
+        }
+    });
+    if (fileToDecache) {
+        console.log('Caching newly cachable file:', filePath);
+        delete STATIC_CACHE[fileToDecache];
+        STATIC_CACHE[filePath] = fileBuffer;
     } else {
-        const relativePath = file.replace(PUBLIC_DIR, '');
-        STATIC_CACHE[relativePath] = fs.readFileSync(file);
+        console.warn('Unable to cache static file ', filePath, fileBuffer.length);
     }
 }
-cacheStaticFiles(STATIC_DIR);
+
+function cacheStaticFilesRecursive(filePath: string, size: number = 0): number {
+    if (!staticCacheEnabled) {
+        return 0;
+    }
+    if (fs.statSync(filePath).isDirectory()) {
+        let addedBytes = 0;
+        fs.readdirSync(filePath).forEach(
+            (subFile) => (addedBytes += cacheStaticFilesRecursive(path.resolve(filePath, subFile), size))
+        );
+        return addedBytes;
+    } else {
+        const relativePath = filePath.replace(PUBLIC_DIR, '');
+        const fileBuffer = fs.readFileSync(filePath);
+        if (fileBuffer.length + size > STATIC_CACHE_MAX_HEAP) {
+            return 0;
+        }
+        STATIC_CACHE[relativePath] = fileBuffer;
+        return fileBuffer.length;
+    }
+}
+if (staticCacheEnabled) {
+    cacheStaticFilesRecursive(STATIC_DIR);
+}
 
 export function renderHtml(prefix: string, page: string, data: IAppData & Record<string, any>): string {
     if (page === '/' || page === '') {
@@ -108,9 +155,13 @@ export default function StaticFiles(reactPathPrefix: string): Express.RequestHan
                 if (!!STATIC_CACHE[requestPath]) {
                     response.status(200).send(STATIC_CACHE[requestPath]);
                 } else {
-                    const staticPath = path.resolve(PUBLIC_DIR, requestPath);
+                    const staticPath = path.join(PUBLIC_DIR, requestPath);
+                    console.log('pubdir', PUBLIC_DIR);
+                    console.log('Cache miss for', requestPath, 'checking if static path exists:', staticPath);
                     if (fs.existsSync(staticPath) && fs.statSync(staticPath).isFile()) {
-                        response.status(200).send(fs.readFileSync(staticPath).toString());
+                        const staticFileBuffer = fs.readFileSync(staticPath);
+                        response.status(200).send(staticFileBuffer);
+                        cacheStaticFile(requestPath, staticFileBuffer);
                     } else {
                         next();
                     }

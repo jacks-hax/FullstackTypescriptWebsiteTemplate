@@ -22,6 +22,7 @@
         "build": "gulp",
         "build:server": "gulp --stack server",
         "build:client": "gulp --stack client",
+        "build:client:watch": "gulp -w --stack client",
         "server": "node --env-file=./dist/.env ./dist/server/index.js",
         "server:admin": "node --env-file=./dist/.env ./dist/server/admin/index.js",
         "server:public": "node --env-file=./dist/.env ./dist/server/public/index.js",
