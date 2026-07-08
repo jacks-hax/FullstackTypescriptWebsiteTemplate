@@ -33,7 +33,7 @@ export default function PostsScreen(props: PostsScreenProps) {
      * ------------------------------------------
      */
     const handleClickNewPost = (_: React.MouseEvent<HTMLButtonElement>) => {
-        window.location.href = '/admin/posts';
+        window.location.href = '/posts';
     };
 
     /**
@@ -42,7 +42,7 @@ export default function PostsScreen(props: PostsScreenProps) {
      * ------------------------------------------
      */
     const getPostPermalink = (post: Post) => {
-        return `${window.location.origin}/admin/posts/${post.Slug}`;
+        return `${window.location.origin}/posts/${post.Slug}`;
     };
 
     /**

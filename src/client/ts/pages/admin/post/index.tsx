@@ -9,7 +9,7 @@ import IPost from '@models/post';
 import ReactUtils from '@client/utils/react';
 import * as EventUtils from '@client/events/utils';
 
-import PostForm from './posts-form';
+import PostForm from '@client/components/forms/posts-form';
 
 export interface FrameWindow extends AppWindow {
     AppData: IAppData & {

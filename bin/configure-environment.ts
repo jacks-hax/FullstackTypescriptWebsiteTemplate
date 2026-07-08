@@ -38,7 +38,8 @@ export interface ApplicationMySQLEnvironmentVariables {
 }
 
 export interface ApplicationEnvrionmentVariables
-    extends ApplicationJWTEnvironmentVariables,
+    extends
+        ApplicationJWTEnvironmentVariables,
         ApplicationSecretsEnvionmentVariables,
         ApplicationMySQLEnvironmentVariables {
     LOG_FILE_PATH: string;

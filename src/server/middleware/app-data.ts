@@ -33,9 +33,9 @@ let refreshCachePromise = new Promise<void>(async (resolve) => {
     };
 });
 
-export default async function AppData(request: Request, _: Response, next: Function) {
+export default async function AppData(_: Request, response: Response, next: Function) {
     await refreshCachePromise;
-    request.appData = APP_DATA_CACHE;
+    response.appData = APP_DATA_CACHE;
     next();
 }
 

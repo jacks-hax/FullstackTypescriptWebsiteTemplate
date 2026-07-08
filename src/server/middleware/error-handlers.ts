@@ -18,7 +18,7 @@ export function handle404(request: Request, response: Response) {
             });
             response.status(404).json(jsonapiResponse);
         } else {
-            response.status(404).send(renderHtml('shared', '404', request.appData!));
+            response.status(404).send(renderHtml('shared', '404', response.appData!));
         }
     });
 }

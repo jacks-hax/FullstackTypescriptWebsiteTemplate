@@ -7,10 +7,8 @@ declare module 'express-session' {
 }
 
 declare module 'express' {
-    export interface Request {
-        appData?: IAppData;
-    }
     export interface Response {
+        appData?: IAppData;
         cspNonce?: string;
     }
 }

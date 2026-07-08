@@ -1,14 +1,15 @@
 import * as React from 'react';
 
-import Post from '@models/post';
+import IPost from '@models/post';
 import Input from '@client/components/input/input';
 import * as InternalEvents from '@client/events';
 import { AbstractInputHandle, HTMLAbstractInputElement } from '@client/components/input/peripherals';
 import Spinner from '@client/components/spinner';
 import toast from '@client/components/toast';
+import Wysiwyg from '../input/wysiwyg';
 
 export interface PostFormProps {
-    post: Post;
+    post: IPost;
 }
 export default function PostForm(props: PostFormProps) {
     /**
@@ -17,7 +18,7 @@ export default function PostForm(props: PostFormProps) {
      * ------------------------------------------
      */
     //const [showSpinner, setShowSpinner] = React.useState<boolean>(false);
-    const [post, setPost] = React.useState<Post>(props.post);
+    const [post, setPost] = React.useState<IPost>(props.post);
     const [isValid, setIsValid] = React.useState<boolean>(false);
     const [isLoading, setIsLoading] = React.useState<boolean>(false);
 
@@ -26,11 +27,10 @@ export default function PostForm(props: PostFormProps) {
      * ----------------- REFS -------------------
      * ------------------------------------------
      */
-    const inputRefs: { [key in keyof Post]: React.RefObject<AbstractInputHandle | null> } = {
+    const inputRefs: { [key in keyof IPost]: React.RefObject<AbstractInputHandle | null> } = {
         Title: React.useRef<AbstractInputHandle>(null),
         Slug: React.useRef<AbstractInputHandle>(null),
-        Status: React.useRef<AbstractInputHandle>(null),
-        Body: React.useRef<AbstractInputHandle>(null)
+        Status: React.useRef<AbstractInputHandle>(null)
     };
 
     /**
@@ -131,6 +131,27 @@ export default function PostForm(props: PostFormProps) {
                     >
                         Save
                     </button>
+                </div>
+            </div>
+            <div className='row'>
+                <div className='col-9'>
+                    <Input
+                        ref={inputRefs.Slug}
+                        type='text'
+                        id='slug'
+                        name='slug'
+                        label='Slug'
+                        value={post.Slug}
+                        minLength={2}
+                        maxLength={64}
+                        required
+                        onChange={handleChange}
+                    />
+                </div>
+            </div>
+            <div className='row'>
+                <div className='col'>
+                    <Wysiwyg id='body' name='body' onChange={handleChange} />
                 </div>
             </div>
         </div>
