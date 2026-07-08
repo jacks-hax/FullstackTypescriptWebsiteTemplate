@@ -1,15 +1,24 @@
 import * as React from 'react';
 
-import IPost from '@models/post';
-import Input from '@client/components/input/input';
+// Models & Types
 import * as InternalEvents from '@client/events';
+import AppWindow from '@models/window';
+import IPost from '@models/post';
+
+// Components
 import { AbstractInputHandle, HTMLAbstractInputElement } from '@client/components/input/peripherals';
+import Wysiwyg from '@client/components/input/wysiwyg';
+import Input from '@client/components/input/input';
 import Spinner from '@client/components/spinner';
-import toast from '@client/components/toast';
-import Wysiwyg from '../input/wysiwyg';
+import Toast from '@client/components/toast';
+
+import AppService from '@client/services/app-service';
+
+declare const window: AppWindow;
 
 export interface PostFormProps {
-    post: IPost;
+    post?: IPost;
+    onSave: (post: IPost) => void;
 }
 export default function PostForm(props: PostFormProps) {
     /**
@@ -18,7 +27,7 @@ export default function PostForm(props: PostFormProps) {
      * ------------------------------------------
      */
     //const [showSpinner, setShowSpinner] = React.useState<boolean>(false);
-    const [post, setPost] = React.useState<IPost>(props.post);
+    const [post, setPost] = React.useState<IPost>(props.post ?? {});
     const [isValid, setIsValid] = React.useState<boolean>(false);
     const [isLoading, setIsLoading] = React.useState<boolean>(false);
 
@@ -38,7 +47,7 @@ export default function PostForm(props: PostFormProps) {
      * ---------------- EFFECTS -----------------
      * ------------------------------------------
      */
-    React.useEffect(() => setPost(props.post), [props.post]);
+    React.useEffect(() => setPost(props.post ?? {}), [props.post]);
 
     /**
      * ------------------------------------------
@@ -56,8 +65,17 @@ export default function PostForm(props: PostFormProps) {
     };
 
     const handleClickSave = (): void => {
-        if (reportValidity()) {
+        if (!reportValidity()) {
+            return;
+        }
+        try {
             submit();
+        } catch (error) {
+            Toast.showToast({
+                variant: 'error',
+                title: 'Error',
+                message: 'Failed to save post'
+            });
         }
     };
 
@@ -90,13 +108,17 @@ export default function PostForm(props: PostFormProps) {
 
     const submit = async () => {
         setIsLoading(true);
-        setTimeout(() => {
-            setIsLoading(false);
-            toast.showToast({
-                title: 'Success!',
-                message: 'Saved post'
-            });
-        }, 3000);
+        const service = new AppService();
+        service.setCSRFToken(window.AppData.tokens.csrfToken);
+        const promise = post.Id ? service.post('/posts', post) : service.patch(`/posts/${post.Id}`, post);
+        const response = await promise;
+        let responseBody;
+        try {
+            responseBody = await response.json();
+        } catch (error) {
+            throw new Error(await response.text());
+        }
+        console.log(responseBody);
     };
 
     /**

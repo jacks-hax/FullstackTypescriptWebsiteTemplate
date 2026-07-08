@@ -2,6 +2,7 @@ import ModuleEventBus, { ModuleEvent } from '@utils/events/module-event-bus';
 import MenuRepository from '@database/repositories/menu';
 import { Request, Response } from 'express';
 import { IAppData } from '@models/window';
+import { randomUUID } from 'node:crypto';
 
 const APP_DATA_CACHE: IAppData = {
     header: {
@@ -10,6 +11,9 @@ const APP_DATA_CACHE: IAppData = {
     },
     footer: {
         menuItems: []
+    },
+    tokens: {
+        csrfToken: randomUUID()
     }
 };
 
@@ -36,6 +40,7 @@ let refreshCachePromise = new Promise<void>(async (resolve) => {
 export default async function AppData(_: Request, response: Response, next: Function) {
     await refreshCachePromise;
     response.appData = APP_DATA_CACHE;
+    response.appData.tokens.csrfToken = randomUUID();
     next();
 }
 

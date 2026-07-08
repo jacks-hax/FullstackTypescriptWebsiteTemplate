@@ -43,4 +43,14 @@ export default class HttpClient {
             body: JSON.stringify(data)
         });
     }
+
+    public async patch(endpoint: string, data: object): Promise<Response> {
+        this.url.pathname = endpoint;
+        return await fetch(this.url, {
+            credentials: 'same-origin',
+            method: 'PATCH',
+            headers: this.headers,
+            body: JSON.stringify(data)
+        });
+    }
 }

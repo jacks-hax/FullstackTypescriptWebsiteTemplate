@@ -1,6 +1,5 @@
 import bcrypt from 'bcryptjs';
 import Constants from '@constants/shared';
-//import { randomUUID } from 'crypto';
 
 export default class Crypto {
     public static async hashPassword(password: string): Promise<string> {
