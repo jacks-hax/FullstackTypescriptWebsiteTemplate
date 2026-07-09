@@ -38,7 +38,10 @@ export default class AppService extends HttpClient {
                 return JsonApiPayload.from(await response.json());
             }
             const contentType = response.headers.get('content-type');
-            const isJson = contentType === 'applicatiion/json';
+            if (contentType?.includes('application/json')) {
+                const payload = JsonApiPayload.from(await response.json());
+                throw new JsonApiException(payload);
+            }
             throw new JsonApiException({
                 message: `Callout failed with status: ${response.statusText} (${response.status})`,
                 errors: [
@@ -46,7 +49,7 @@ export default class AppService extends HttpClient {
                         title: response.statusText,
                         status: response.statusText,
                         code: response.status.toString(),
-                        detail: await (isJson ? response.json() : response.text())
+                        detail: await response.text()
                     }
                 ]
             });
