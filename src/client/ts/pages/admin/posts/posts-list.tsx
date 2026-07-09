@@ -66,8 +66,7 @@ export default function PostsScreen(props: PostsScreenProps) {
                     }
                 });
             } else {
-                Toast.showToast({
-                    variant: 'error',
+                Toast.showErrorToast({
                     title: 'Error Creating Post',
                     message: error instanceof Error ? error.message : 'Failed to create new post'
                 });

@@ -105,17 +105,14 @@ export default function LoginForm(props: LoginFormProps): React.JSX.Element {
             const service = new AppService();
             service.setCSRFToken(props.csrfToken);
             await service.login(formData);
-            Toast.showToast({
+            Toast.showSuccessToast({
                 title: 'Success!',
-                message: 'You have been successfully logged in.',
-                variant: 'success'
+                message: 'You have been successfully logged in.'
             });
         } catch (error) {
             const toastProps: ToastProps = {
                 title: 'Error',
-                message: 'There was an error submitting your request. Please try again.',
-                variant: 'error',
-                mode: 'sticky'
+                message: 'There was an error submitting your request. Please try again.'
             };
             if (error instanceof Error) {
                 toastProps.message = error.message;
@@ -127,7 +124,7 @@ export default function LoginForm(props: LoginFormProps): React.JSX.Element {
                     });
                 });
             }
-            Toast.showToast(toastProps);
+            Toast.showErrorToast(toastProps);
             console.error('Error:', error);
         } finally {
             setIsLoading(false);
