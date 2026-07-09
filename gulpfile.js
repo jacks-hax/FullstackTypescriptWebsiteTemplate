@@ -160,6 +160,7 @@ class Client {
             Client.initialClean,
             Client.copyImages,
             Client.copyTemplates,
+            Client.copyDependencies,
             Client.compileSass,
             Client.minifyCss,
             //...compilationTasks,
@@ -208,7 +209,7 @@ class Client {
      */
     static copyImages() {
         return gulp
-            .src([path.resolve(SRC_DIR_CLIENT, 'images/*'), `!${path.resolve(SRC_DIR_CLIENT, 'images/*.d.ts')}`])
+            .src([path.resolve(SRC_DIR_CLIENT, 'images/**/*'), `!${path.resolve(SRC_DIR_CLIENT, 'images/*.d.ts')}`])
             .pipe(gulp.dest(path.resolve(OUT_DIR_CLIENT_STATIC, 'images')));
     }
 
@@ -218,8 +219,21 @@ class Client {
      */
     static copyTemplates() {
         return gulp
-            .src([path.resolve(SRC_DIR_CLIENT, 'templates/*'), `!${path.resolve(SRC_DIR_CLIENT, 'templates/*.d.ts')}`])
+            .src([
+                path.resolve(SRC_DIR_CLIENT, 'templates/**/*'),
+                `!${path.resolve(SRC_DIR_CLIENT, 'templates/*.d.ts')}`
+            ])
             .pipe(gulp.dest(OUT_DIR_CLIENT));
+    }
+
+    /**
+     * @description Copies all dependencies from the source directory to the output directory
+     * @returns {NodeJS.ReadWriteStream}
+     */
+    static copyDependencies() {
+        return gulp
+            .src([path.resolve(SRC_DIR_CLIENT, 'deps/**/*'), `!${path.resolve(SRC_DIR_CLIENT, 'deps/*.d.ts')}`])
+            .pipe(gulp.dest(path.resolve(OUT_DIR_CLIENT_STATIC, 'deps')));
     }
 
     /**

@@ -21,6 +21,7 @@
             "@database/*": ["./src/server/database/*"],
             "@utils/*": ["./src/server/utils/*"],
             "@models/*": ["./src/models/*"],
+            "@deps/*": ["./src/client/deps/*"],
             "@constants/*": ["./src/constants/*"]
         },
         "forceConsistentCasingInFileNames": true,

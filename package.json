@@ -83,7 +83,6 @@
         "webpack-stream": "^7.0.0"
     },
     "dependencies": {
-        "@tinymce/tinymce-react": "^6.3.0",
         "@types/mysql": "^2.15.27",
         "bcryptjs": "^3.0.3",
         "dompurify": "^3.4.11",
