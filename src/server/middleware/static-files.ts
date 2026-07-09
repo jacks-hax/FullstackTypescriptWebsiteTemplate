@@ -144,8 +144,13 @@ export default function StaticFiles(reactPathPrefix: string): Express.RequestHan
     return (request: Request, response: Response, next: Function) => {
         try {
             let requestPath = request.path.replaceAll('..', '');
-            while (requestPath.includes('//')) {
+            let iters = 0;
+            while (requestPath.includes('//') && iters++ < 10) {
                 requestPath = requestPath.replaceAll('//', '/');
+            }
+            console.log('iters:', iters);
+            if (iters === 10) {
+                response.status(400).send('fuckoff');
             }
 
             console.log('requestPath:', requestPath);
@@ -154,14 +159,16 @@ export default function StaticFiles(reactPathPrefix: string): Express.RequestHan
                 response.setHeader(Constants.HEADERS.CONTENT_TYPE, contentType);
                 if (!!STATIC_CACHE[requestPath]) {
                     response.status(200).send(STATIC_CACHE[requestPath]);
+                    return;
                 } else {
                     const staticPath = path.join(PUBLIC_DIR, requestPath);
                     if (fs.existsSync(staticPath) && fs.statSync(staticPath).isFile()) {
                         const staticFileBuffer = fs.readFileSync(staticPath);
                         response.status(200).send(staticFileBuffer);
                         cacheStaticFile(requestPath, staticFileBuffer);
+                        return;
                     } else {
-                        next();
+                        return next();
                     }
                 }
             } else {
@@ -170,10 +177,12 @@ export default function StaticFiles(reactPathPrefix: string): Express.RequestHan
                 }
                 response.setHeader(Constants.HEADERS.CONTENT_TYPE, Constants.CONTENT_TYPES.HTML);
                 response.status(200).send(renderHtml(reactPathPrefix, requestPath, response.appData!));
+                return;
             }
         } catch (error) {
             console.error('Static resolution error:', error);
-            next();
+            return next();
         }
+        console.warn('Should not get here...');
     };
 }

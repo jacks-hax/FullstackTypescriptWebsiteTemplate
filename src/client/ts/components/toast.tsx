@@ -301,7 +301,7 @@ const onContainerRender = (handle: ToastContainerHandle | null) => {
 
 // Generate a wrapper for the toast container and render it
 const container = document.createElement('div');
-debugger;
+//debugger;
 window.document.body.appendChild(container);
 createRoot(container).render(<ToastContainer ref={onContainerRender} />);
 

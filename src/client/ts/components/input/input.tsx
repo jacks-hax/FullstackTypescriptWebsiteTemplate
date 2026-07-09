@@ -177,7 +177,7 @@ function Input(props: InputProps, ref: React.ForwardedRef<AbstractInputHandle>):
                 onKeyDown={handleKeyDown}
                 onBlur={handleBlur}
                 onFocus={props.onFocus}
-            ></input>
+            />
             <InputSubtext inputId={props.id} description={props.description} error={error} />
         </div>
     );

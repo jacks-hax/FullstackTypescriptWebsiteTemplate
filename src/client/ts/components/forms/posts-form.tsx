@@ -10,17 +10,22 @@ import { AbstractInputHandle, HTMLAbstractInputElement } from '@client/component
 import Wysiwyg from '@client/components/input/wysiwyg';
 import Input from '@client/components/input/input';
 import Spinner from '@client/components/spinner';
-import Toast from '@client/components/toast';
 
 import AppService from '@client/services/app-service';
+import { ResponseError } from '@models/errors';
+import JsonApiResponse from '@models/jsonapi';
 
 declare const window: AppWindow;
 
 export interface PostFormProps {
     post?: IPost;
-    onSave: (post: IPost) => void;
 }
-export default function PostForm(props: PostFormProps) {
+
+export interface PostFormHandle {
+    save: () => Promise<IPost>;
+}
+
+function PostForm(props: PostFormProps, ref: React.ForwardedRef<PostFormHandle>) {
     /**
      * ------------------------------------------
      * ---------------- STATE -------------------
@@ -39,15 +44,9 @@ export default function PostForm(props: PostFormProps) {
     const inputRefs: { [key in keyof IPost]: React.RefObject<AbstractInputHandle | null> } = {
         Title: React.useRef<AbstractInputHandle>(null),
         Slug: React.useRef<AbstractInputHandle>(null),
-        Status: React.useRef<AbstractInputHandle>(null)
+        Status: React.useRef<AbstractInputHandle>(null),
+        Body: React.useRef<AbstractInputHandle>(null)
     };
-
-    /**
-     * ------------------------------------------
-     * ---------------- EFFECTS -----------------
-     * ------------------------------------------
-     */
-    React.useEffect(() => setPost(props.post ?? {}), [props.post]);
 
     /**
      * ------------------------------------------
@@ -62,21 +61,6 @@ export default function PostForm(props: PostFormProps) {
             [param]: value
         });
         checkValidity();
-    };
-
-    const handleClickSave = (): void => {
-        if (!reportValidity()) {
-            return;
-        }
-        try {
-            submit();
-        } catch (error) {
-            Toast.showToast({
-                variant: 'error',
-                title: 'Error',
-                message: 'Failed to save post'
-            });
-        }
     };
 
     /**
@@ -106,28 +90,52 @@ export default function PostForm(props: PostFormProps) {
         return valid;
     };
 
-    const submit = async () => {
+    const save = async (): Promise<IPost> => {
+        if (!reportValidity()) {
+            throw new Error('Invalid form');
+        }
         setIsLoading(true);
         const service = new AppService();
         service.setCSRFToken(window.AppData.tokens.csrfToken);
         const promise = post.Id ? service.post('/posts', post) : service.patch(`/posts/${post.Id}`, post);
         const response = await promise;
-        let responseBody;
-        try {
-            responseBody = await response.json();
-        } catch (error) {
-            throw new Error(await response.text());
+        if (!response.ok) {
+            throw new ResponseError('Failed to save post', response);
         }
-        console.log(responseBody);
+        try {
+            const payload = JsonApiResponse.from(await response.json());
+            if (payload.data) {
+                const responsePost = payload.data as IPost;
+                setPost(responsePost);
+                return responsePost;
+            }
+        } catch (error) {
+            console.error(error);
+            throw new ResponseError('Failed to process response from server', response);
+        }
+        return post;
     };
+
+    /**
+     * ------------------------------------------
+     * ---------------- EFFECTS -----------------
+     * ------------------------------------------
+     */
+
+    React.useImperativeHandle(ref, () => ({
+        save
+    }));
+
+    React.useEffect(() => setPost(props.post ?? {}), [props.post]);
 
     /**
      * ------------------------------------------
      * -------------- RENDERING -----------------
      * ------------------------------------------
      */
+
     return (
-        <div className='container'>
+        <form className='container app-form'>
             {isLoading && <Spinner />}
             <div className='row'>
                 <div className='col-9'>
@@ -143,16 +151,6 @@ export default function PostForm(props: PostFormProps) {
                         required
                         onChange={handleChange}
                     />
-                </div>
-                <div className='col'>
-                    <button
-                        type='button'
-                        className='btn btn-outline-primary px-4'
-                        disabled={!isValid}
-                        onClick={handleClickSave}
-                    >
-                        Save
-                    </button>
                 </div>
             </div>
             <div className='row'>
@@ -173,9 +171,19 @@ export default function PostForm(props: PostFormProps) {
             </div>
             <div className='row'>
                 <div className='col'>
-                    <Wysiwyg id='body' name='body' onChange={handleChange} />
+                    <Wysiwyg
+                        ref={inputRefs.Body}
+                        id='body'
+                        name='body'
+                        label='Html Body'
+                        value={post.Body}
+                        required
+                        onChange={handleChange}
+                    />
                 </div>
             </div>
-        </div>
+        </form>
     );
 }
+
+export default React.forwardRef(PostForm);

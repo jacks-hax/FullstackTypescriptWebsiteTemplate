@@ -4,8 +4,9 @@ import * as React from 'react';
 import IPost from '@models/post';
 
 // Components
-import PostForm from '@client/components/forms/posts-form';
-import Modal from '@client/components/modal';
+import PostForm, { PostFormHandle } from '@client/components/forms/posts-form';
+import Modal, { ModalContent, ModalFooter, ModalHandle } from '@client/components/modal';
+import toast from '@client/components/toast';
 
 export interface PostsScreenProps {
     posts: Array<IPost>;
@@ -19,13 +20,14 @@ export default function PostsScreen(props: PostsScreenProps) {
      */
     //const [showSpinner, setShowSpinner] = React.useState<boolean>(false);
     const [posts, setPosts] = React.useState<Array<IPost>>(props.posts);
-    const [showNewPostModal, setShowNewPostModal] = React.useState<boolean>(false);
 
     /**
      * ------------------------------------------
      * ----------------- REFS -------------------
      * ------------------------------------------
      */
+    const modalRef = React.useRef<ModalHandle>(null);
+    const postFormRef = React.useRef<PostFormHandle>(null);
 
     /**
      * ------------------------------------------
@@ -39,12 +41,25 @@ export default function PostsScreen(props: PostsScreenProps) {
      * ------------- EVENT HANDLERS  ------------
      * ------------------------------------------
      */
-    const handleClickNewPost = (_: React.MouseEvent<HTMLButtonElement>) => {
-        setShowNewPostModal(true);
+    const handleClickNewPost = () => {
+        modalRef.current?.show();
     };
 
-    const handleSaveNewPost = (post: IPost) => {
-        window.open(`${window.location.origin}/posts/${post.Id}`);
+    const handleClickSaveNewPost = async () => {
+        try {
+            const newPost = await postFormRef.current?.save();
+            if (!newPost) {
+                throw new Error('Unable to save post form');
+            }
+            window.open(`${window.location.origin}/posts/${newPost.Id}`);
+        } catch (error) {
+            console.error(error);
+            toast.showToast({
+                variant: 'error',
+                title: 'Error Creating Post',
+                message: error instanceof Error ? error.message : 'Failed to create new post'
+            });
+        }
     };
 
     /**
@@ -106,11 +121,16 @@ export default function PostsScreen(props: PostsScreenProps) {
                     {renderPosts()}
                 </div>
             </div>
-            {showNewPostModal && (
-                <Modal id='new_post' title='New Post'>
-                    <PostForm onSave={handleSaveNewPost}></PostForm>
-                </Modal>
-            )}
+            <Modal ref={modalRef} id='new_post' title='New Post'>
+                <ModalContent>
+                    <PostForm ref={postFormRef}></PostForm>
+                </ModalContent>
+                <ModalFooter>
+                    <button className='btn btn-brand' onClick={handleClickSaveNewPost}>
+                        Save
+                    </button>
+                </ModalFooter>
+            </Modal>
         </>
     );
 }
