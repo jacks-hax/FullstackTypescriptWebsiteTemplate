@@ -113,3 +113,18 @@ export default class JsonApiPayload implements IJsonApiPayload {
         }
     }
 }
+
+export class JsonApiException extends Error {
+    public payload: JsonApiPayload;
+    constructor(payload: JsonApiPayload | IJsonApiPayload) {
+        super(
+            payload.errors?.map((error) => error.detail).join(', ') || payload.message || 'An unknown error occurred'
+        );
+        Object.setPrototypeOf(this, JsonApiException.prototype);
+        if (payload instanceof JsonApiPayload) {
+            this.payload = payload;
+        } else {
+            this.payload = JsonApiPayload.from(payload);
+        }
+    }
+}

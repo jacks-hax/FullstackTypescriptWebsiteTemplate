@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import CLIReader, { CLIValueConfig, type CLIValue, type CLIValueParseResult } from './utils/cli-reader.ts';
+import CLIReader, { CLIValueConfig, type CLIValue } from './utils/cli-reader.ts';
 import ensureNodeEnv from './utils/node-env.ts';
 import asyncExec from './utils/async-exec.ts';
 import dotenv from 'dotenv';
@@ -18,6 +18,12 @@ export interface EnvironmentVariableConfig {
     label: string;
     default: string;
     masked?: boolean;
+}
+
+export interface ApplicationServerEnvironmentVariables {
+    SERVER_PROTOCOL: string;
+    SERVER_HOST_NAME: string;
+    SERVER_PORT: string;
 }
 
 export interface ApplicationJWTEnvironmentVariables {
@@ -39,10 +45,12 @@ export interface ApplicationMySQLEnvironmentVariables {
 
 export interface ApplicationEnvrionmentVariables
     extends
+        ApplicationServerEnvironmentVariables,
         ApplicationJWTEnvironmentVariables,
         ApplicationSecretsEnvionmentVariables,
         ApplicationMySQLEnvironmentVariables {
     LOG_FILE_PATH: string;
+    NODE_ENV: 'development' | 'staging' | 'production';
 }
 
 const __filename = url.fileURLToPath(import.meta.url);
@@ -55,6 +63,23 @@ const SECRETS_DIR = path.resolve(OUT_DIR, '.private');
 const JWT_PRIVATE_KEY_FILE = path.resolve(SECRETS_DIR, 'jwt/private-key.pem');
 const JWT_PUBLIC_KEY_FILE = path.resolve(SECRETS_DIR, 'jwt/public-key.pem');
 
+const GATEWAY_CONFIG = new CLIValueConfig({
+    key: 'GATEWAY',
+    label: 'Gateway',
+    type: 'enum',
+    enumValues: new Set(['admin', 'public']),
+    flags: new Set(['--gateway', '-c']),
+    defaultValue: 'public'
+});
+
+const GATEWAY_PATH_CONFIG = new CLIValueConfig({
+    key: 'GATEWAY_PATH',
+    label: 'Servlet Gateway Path',
+    type: 'string',
+    flags: new Set(['--gateway-path']),
+    defaultValue: '/'
+});
+
 const JWT_CURVE_ENV_CONFIG = new CLIValueConfig({
     key: 'JWT_CURVE',
     label: 'JWT Elliptical Curve Algorithm',
@@ -66,12 +91,20 @@ const JWT_CURVE_ENV_CONFIG = new CLIValueConfig({
 // These variables will be saved in the .env file once captured from the user
 const ENVIRONMENT_VARIABLE_CONFIGS: Readonly<Array<CLIValueConfig>> = Object.freeze([
     new CLIValueConfig({
-        key: 'SERVER_HOSTNAME',
+        key: 'SERVER_HOST_NAME',
         label: 'Server Hostname',
         type: 'string',
         flags: new Set(['--hostname', '-h']),
         defaultValue: 'localhost'
     }),
+    new CLIValueConfig({
+        key: 'SERVER_PORT',
+        label: 'Server Port',
+        type: 'string',
+        flags: new Set(['--port', '-p']),
+        defaultValue: '8080'
+    }),
+    GATEWAY_PATH_CONFIG,
     new CLIValueConfig({
         key: 'MYSQL_HOST',
         label: 'MySQL Host',
@@ -111,6 +144,10 @@ const ENVIRONMENT_VARIABLE_CONFIGS: Readonly<Array<CLIValueConfig>> = Object.fre
 ] as Array<CLIValueConfig>);
 
 const EMPTY_ENV_VARS: ApplicationEnvrionmentVariables = {
+    NODE_ENV: 'development',
+    SERVER_PROTOCOL: '',
+    SERVER_HOST_NAME: '',
+    SERVER_PORT: '',
     LOG_FILE_PATH: '',
     MYSQL_HOST: '',
     MYSQL_USER: '',
@@ -179,8 +216,14 @@ async function main() {
         // Ensure that process.env.NODE_ENV is set
         await ensureNodeEnv();
 
+        // Gateway will either be 'admin' or 'public'
+        const gateway =
+            CLIReader.parseArgv([GATEWAY_CONFIG], true, false)[0] || (await CLIReader.prompt(GATEWAY_CONFIG));
+
+        GATEWAY_PATH_CONFIG.defaultValue = gateway === 'admin' ? '/admin' : '/';
+
         // Define .env file paths
-        const dotenvFileName = `.env.${process.env.NODE_ENV}`;
+        const dotenvFileName = `.env.${gateway}.${process.env.NODE_ENV}`;
         const dotenvFilePath = path.resolve(dotenvFileName);
         const draftDotenvFileName = `${dotenvFileName}.draft`;
         const draftDotenvFilePath = path.resolve(draftDotenvFileName);
@@ -188,6 +231,9 @@ async function main() {
         // Reset the ctrl+c interrupt handler to log the draft .env file path
         clearInterrupt();
         clearInterrupt = trapInterrupt(draftDotenvFilePath);
+
+        const oldDotenv: ApplicationEnvrionmentVariables = { ...EMPTY_ENV_VARS };
+        const draftDotenv: ApplicationEnvrionmentVariables = { ...EMPTY_ENV_VARS };
 
         // Helper method for writing a variable to the draft .env file
         const writeVariableToDraftFile = (key: keyof ApplicationEnvrionmentVariables, value: CLIValue) => {
@@ -204,8 +250,7 @@ async function main() {
             }
         };
 
-        const oldDotenv: ApplicationEnvrionmentVariables = { ...EMPTY_ENV_VARS };
-        const draftDotenv: ApplicationEnvrionmentVariables = { ...EMPTY_ENV_VARS };
+        writeVariableToDraftFile('NODE_ENV', process.env.NODE_ENV!);
 
         // If an existing dotenv is found, fallback on that for default values
         if (fs.existsSync(dotenvFilePath)) {
@@ -231,6 +276,9 @@ async function main() {
             writeVariableToDraftFile(key, value);
             config.apply(draftDotenv, value);
         }
+
+        const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https';
+        writeVariableToDraftFile('SERVER_PROTOCOL', protocol);
 
         // Generate JWT Secrets and apply file paths to env
         if (!fs.existsSync(JWT_PRIVATE_KEY_FILE)) {

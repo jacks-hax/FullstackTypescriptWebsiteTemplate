@@ -7,6 +7,7 @@ import IPost from '@models/post';
 import PostForm, { PostFormHandle } from '@client/components/forms/posts-form';
 import Modal, { ModalContent, ModalFooter, ModalHandle } from '@client/components/modal';
 import toast from '@client/components/toast';
+import Button from '@client/components/input/button';
 
 export interface PostsScreenProps {
     posts: Array<IPost>;
@@ -126,9 +127,7 @@ export default function PostsScreen(props: PostsScreenProps) {
                     <PostForm ref={postFormRef}></PostForm>
                 </ModalContent>
                 <ModalFooter>
-                    <button className='btn btn-brand' onClick={handleClickSaveNewPost}>
-                        Save
-                    </button>
+                    <Button id='save_post' name='save_post' label='Save' onClick={handleClickSaveNewPost} />
                 </ModalFooter>
             </Modal>
         </>

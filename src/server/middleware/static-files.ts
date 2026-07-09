@@ -140,9 +140,11 @@ export default function StaticFiles(reactPathPrefix: string): Express.RequestHan
         ...indexStaticDir(PAGES_DIR),
         ...indexStaticDir(SHARED_PAGES_DIR)
     };
-    console.log('rpn:', ROOT_PAGE_NODE);
     return (request: Request, response: Response, next: Function) => {
         try {
+            if (request.method !== 'GET') {
+                return next();
+            }
             let requestPath = request.path.replaceAll('..', '');
             let iters = 0;
             while (requestPath.includes('//') && iters++ < 10) {
@@ -183,6 +185,5 @@ export default function StaticFiles(reactPathPrefix: string): Express.RequestHan
             console.error('Static resolution error:', error);
             return next();
         }
-        console.warn('Should not get here...');
     };
 }

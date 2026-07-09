@@ -74,7 +74,9 @@ function WYSIWYG(props: WYSIWYGProps, ref: React.ForwardedRef<AbstractInputHandl
 
     const handleChange = (content: string) => {
         setValue(content);
-        console.log('wysiwg change event', content);
+        if (error?.length) {
+            reportValidity();
+        }
         if (props.onChange) {
             props.onChange(
                 new InternalEvents.ChangeEvent<HTMLTextAreaElement>(
@@ -129,20 +131,15 @@ function WYSIWYG(props: WYSIWYGProps, ref: React.ForwardedRef<AbstractInputHandl
         wysiCss.rel = 'stylesheet';
         wysiCss.href = WYSI_CSS_URL;
         document.body.appendChild(wysiCss);
-        wysiCss.addEventListener('load', () => {
-            console.log('wysi css loaded!');
-        });
 
         const wysiScript = document.createElement('script');
         wysiScript.src = WYSI_SRC_URL;
         document.body.appendChild(wysiScript);
         wysiScript.addEventListener('load', () => {
-            console.log('wysi script loaded, initializing now...');
-            const result = Wysi({
+            Wysi({
                 el: `#${props.id}`,
                 onChange: handleChange
             });
-            console.log('Wysi result:', result);
         });
     };
 
@@ -159,6 +156,11 @@ function WYSIWYG(props: WYSIWYGProps, ref: React.ForwardedRef<AbstractInputHandl
     }));
 
     React.useEffect(() => {
+        setValue(props.value?.toString() || '');
+        setError(props.error);
+    }, [props.value, props.error]);
+
+    React.useEffect(() => {
         initWysiScript();
     }, []);
 
@@ -169,7 +171,6 @@ function WYSIWYG(props: WYSIWYGProps, ref: React.ForwardedRef<AbstractInputHandl
      */
 
     const showLabel = props.variant !== 'label-hidden' && !!props.label?.length;
-    console.log('Show label:', showLabel, 'label:', props.label);
     return (
         <div id={`${props.id}Wrapper`} className={props.className}>
             {showLabel && <InputLabel inputId={props.id} label={props.label} required={props.required} />}

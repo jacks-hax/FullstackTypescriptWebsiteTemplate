@@ -9,8 +9,12 @@ import { handle404, handleServerError } from '@middleware/error-handlers';
 import BodyParserMiddleware from '@middleware/body-parser';
 import SessionMiddleware from '@middleware/session';
 import StaticFiles from '@middleware/static-files';
-import Constants from '@constants/shared';
 import API from '@server/public/api';
+
+const port = process.env.SERVER_PORT;
+if (!port?.length) {
+    throw new Error('Public gateway port environment variable is not defined!');
+}
 
 // Initialize Express app
 const app = Express();
@@ -50,8 +54,8 @@ function handleModuleReady(event: ModuleEvent) {
     ModuleEventBus.removeEventListener(ModuleEventBus.SYSTEM_EVENTS.MODULE_INIT, handleModuleInit);
     ModuleEventBus.removeEventListener(ModuleEventBus.SYSTEM_EVENTS.MODULE_READY, handleModuleReady);
     ModuleEventBus.removeEventListener(ModuleEventBus.SYSTEM_EVENTS.MODULE_ERROR, handleModuleError);
-    app.listen(Constants.PORT, () => {
-        console.log(`Server is running on http://localhost:${Constants.PORT}`);
+    app.listen(port, () => {
+        console.log(`Server is running on http://${process.env.SERVER_HOST_NAME}:${port}`);
     });
 }
 

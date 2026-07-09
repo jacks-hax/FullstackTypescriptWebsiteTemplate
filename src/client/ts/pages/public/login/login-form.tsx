@@ -11,7 +11,7 @@ import * as InternalEvents from '@client/events';
 import Toast, { ToastProps } from '@client/components/toast';
 
 // Types & Models
-import JsonApiException from '@client/models/json-api-exception';
+import { JsonApiException } from '@models/jsonapi';
 import { LoginForm as LoginFormData } from 'form-types';
 
 // Http webservice client

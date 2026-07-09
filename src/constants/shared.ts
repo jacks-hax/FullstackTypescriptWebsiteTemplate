@@ -1,5 +1,4 @@
 export default class Constants {
-    public static readonly PORT = 8080;
     public static readonly ENCODING_SCHEME = 'base64url';
     public static readonly JsonApi_VERSION = '1.1';
 

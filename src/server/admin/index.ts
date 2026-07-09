@@ -5,25 +5,29 @@ import Express from 'express';
 
 import ModuleEventBus, { ModuleEvent } from '@utils/events/module-event-bus';
 import { handle404, handleServerError } from '@middleware/error-handlers';
-import { CSPLoader, Helmet } from '@middleware/security';
+//import { CSPLoader, Helmet } from '@middleware/security';
 import BodyParserMiddleware from '@middleware/body-parser';
 import SessionMiddleware from '@middleware/session';
 import AdminStaticPages from '@server/admin/static';
 import AppData from '@middleware/app-data';
-import Constants from '@constants/shared';
 import API from '@server/admin/api';
+
+const port = process.env.SERVER_PORT;
+if (!port?.length) {
+    throw new Error('Admin gateway port environment variable is not defined!');
+}
 
 // Initialize Express app
 const app = Express();
 app.disable('x-powered-by');
+//app.use(CSPLoader);
+//app.use(Helmet);
 app.use(SessionMiddleware);
 app.use(BodyParserMiddleware);
 app.use('/api', API);
-app.use(CSPLoader);
 app.use(AppData);
 app.use('/', AdminStaticPages);
 app.use(handle404);
-app.use(Helmet);
 app.use(handleServerError);
 
 // Wait for all async modules to initialize before starting the server
@@ -48,8 +52,8 @@ function handleModuleReady(event: ModuleEvent) {
     ModuleEventBus.removeEventListener(ModuleEventBus.SYSTEM_EVENTS.MODULE_INIT, handleModuleInit);
     ModuleEventBus.removeEventListener(ModuleEventBus.SYSTEM_EVENTS.MODULE_READY, handleModuleReady);
     ModuleEventBus.removeEventListener(ModuleEventBus.SYSTEM_EVENTS.MODULE_ERROR, handleModuleError);
-    app.listen(Constants.PORT, () => {
-        console.log(`Server is running on http://localhost:${Constants.PORT}`);
+    app.listen(port, () => {
+        console.log(`Server is running on http://${process.env.SERVER_HOST_NAME}:${port}`);
     });
 }
 

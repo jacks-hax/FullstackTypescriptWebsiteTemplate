@@ -90,6 +90,10 @@ body {
     }
 }
 
+:root {
+    --bs-border-width: 1px;
+}
+
 // Add additional custom code here
 
 // Typography Styles
@@ -225,6 +229,7 @@ a.btn-primary {
     border-width: $btn-border-width;
     border-style: $btn-border-style;
     &:hover {
+        color: $btn-primary-color;
         background-color: $btn-primary-hover-bg;
         border-color: $btn-primary-hover-border;
         svg {

@@ -7,6 +7,20 @@ import { Response } from 'express';
 
 export default class Utils {
     /**
+     * @description Get the base url to access the gateway to this server
+     * @returns {string} Server base url
+     */
+    public static getServerBaseUrl(): string {
+        let baseUrl = process.env.SERVER_PROTOCOL + '://' + process.env.SERVER_HOST_NAME;
+        console.log('constructing server url for ', process.env.NODE_ENV);
+        if (process.env.NODE_ENV === 'development') {
+            baseUrl += ':' + process.env.SERVER_PORT;
+        }
+        baseUrl += process.env.GATEWAY_PATH;
+        return new URL(baseUrl).href.replace(/\/+$/, '');
+    }
+
+    /**
      * @description Ensure that a request payload is valid
      * @param payload Payload from request
      * @param allowedFields Field describes that are allowed for this request

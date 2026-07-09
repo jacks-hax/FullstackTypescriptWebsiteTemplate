@@ -9,8 +9,7 @@ import IPost from '@models/post';
 import ReactUtils from '@client/utils/react';
 import * as EventUtils from '@client/events/utils';
 
-import PostForm from '@client/components/forms/posts-form';
-import Toast from '@client/components/toast';
+import PostPage from '@client/pages/admin/post/post-page';
 
 export interface FrameWindow extends AppWindow {
     AppData: IAppData & {
@@ -21,15 +20,8 @@ declare const window: FrameWindow;
 
 try {
     const root = ReactUtils.createRoot('root');
-    const handleSave = (post: IPost) => {
-        Toast.showToast({
-            variant: 'success',
-            title: 'Saved',
-            message: 'Saved post ' + post.Id
-        });
-    };
 
-    root.render(<PostForm post={window.AppData.post} onSave={handleSave} />);
+    root.render(<PostPage post={window.AppData.post} />);
 
     // Prevent the page from scrolling down when the space key is pressed
     window.addEventListener('keydown', function (e: Event) {

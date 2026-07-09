@@ -2,7 +2,11 @@ declare global {
     namespace NodeJS {
         interface ProcessEnv {
             NODE_ENV: 'development' | 'staging' | 'production';
+            GATEWAY: 'admin' | 'public';
+            GATEWAY_PATH: string;
+            SERVER_PROTOCOL: 'http' | 'https';
             SERVER_HOST_NAME: string;
+            SERVER_PORT: string;
             MYSQL_HOST: string;
             MYSQL_DATABASE: string;
             MYSQL_USER: string;

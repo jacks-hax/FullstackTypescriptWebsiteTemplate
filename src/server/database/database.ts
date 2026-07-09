@@ -46,10 +46,12 @@ export default class Database extends AsyncModule {
             return Database.currentConnection;
         }
         return new Promise<mysql.PoolConnection>((resolve, reject) => {
+            console.log('getting connection...');
             Database.pool.getConnection((error: NodeJS.ErrnoException | null, connection: mysql.PoolConnection) => {
                 if (error) {
                     reject(error);
                 } else {
+                    console.log('got connection!');
                     resolve(connection);
                 }
             });
@@ -131,7 +133,9 @@ export default class Database extends AsyncModule {
                     } else {
                         resolve(result);
                     }
-                    return null;
+                    if (connection != Database.currentConnection) {
+                        connection.destroy();
+                    }
                 }
             );
         });
@@ -161,6 +165,9 @@ export default class Database extends AsyncModule {
                     } else {
                         resolve(recordId);
                     }
+                    if (connection != Database.currentConnection) {
+                        connection.destroy();
+                    }
                 }
             );
         });
@@ -183,6 +190,9 @@ export default class Database extends AsyncModule {
                         reject(new DatabaseError(updateError));
                     } else {
                         resolve(result);
+                    }
+                    if (connection != Database.currentConnection) {
+                        connection.destroy();
                     }
                 }
             );
@@ -207,6 +217,9 @@ export default class Database extends AsyncModule {
                         reject(new DatabaseError(deleteError));
                     } else {
                         resolve(result);
+                    }
+                    if (connection != Database.currentConnection) {
+                        connection.destroy();
                     }
                 }
             );

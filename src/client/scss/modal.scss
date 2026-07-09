@@ -24,16 +24,15 @@
     }
 
     .results {
-
         a {
             color: #262c33;
             text-decoration: none;
         }
-        
+
         .row {
             cursor: pointer;
             border-radius: 10px;
-    
+
             p {
                 display: -webkit-box;
                 -webkit-line-clamp: 2;
@@ -43,8 +42,8 @@
         }
 
         .row:hover {
-            color: #378EFC;
-            background: rgba(55, 142, 252, 0.20);
+            color: #378efc;
+            background: rgba(55, 142, 252, 0.2);
         }
 
         .badge {
@@ -59,17 +58,14 @@
         }
     }
 
-
     input {
-        border: none;
         font-size: 20px;
     }
 
-    input[type="search"]::-webkit-search-decoration,
-    input[type="search"]::-webkit-search-cancel-button,
-    input[type="search"]::-webkit-search-results-button,
-    input[type="search"]::-webkit-search-results-decoration { 
+    input[type='search']::-webkit-search-decoration,
+    input[type='search']::-webkit-search-cancel-button,
+    input[type='search']::-webkit-search-results-button,
+    input[type='search']::-webkit-search-results-decoration {
         display: none;
     }
-    
 }

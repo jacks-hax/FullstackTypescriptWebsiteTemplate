@@ -26,8 +26,9 @@ export default class HttpClient {
     }
 
     public async get(endpoint: string): Promise<Response> {
-        this.url.pathname = endpoint;
-        return await fetch(this.url, {
+        const url = new URL(this.url);
+        url.pathname += endpoint;
+        return await fetch(url, {
             credentials: 'same-origin',
             method: 'GET',
             headers: this.headers
@@ -35,8 +36,9 @@ export default class HttpClient {
     }
 
     public async post(endpoint: string, data: object): Promise<Response> {
-        this.url.pathname = endpoint;
-        return await fetch(this.url, {
+        const url = new URL(this.url);
+        url.pathname += endpoint;
+        return await fetch(url, {
             credentials: 'same-origin',
             method: 'POST',
             headers: this.headers,
@@ -45,12 +47,23 @@ export default class HttpClient {
     }
 
     public async patch(endpoint: string, data: object): Promise<Response> {
-        this.url.pathname = endpoint;
-        return await fetch(this.url, {
+        const url = new URL(this.url);
+        url.pathname += endpoint;
+        return await fetch(url, {
             credentials: 'same-origin',
             method: 'PATCH',
             headers: this.headers,
             body: JSON.stringify(data)
+        });
+    }
+
+    public async delete(endpoint: string): Promise<Response> {
+        const url = new URL(this.url);
+        url.pathname += endpoint;
+        return await fetch(url, {
+            credentials: 'same-origin',
+            method: 'DELETE',
+            headers: this.headers
         });
     }
 }

@@ -3,6 +3,7 @@ import MenuRepository from '@database/repositories/menu';
 import { Request, Response } from 'express';
 import { IAppData } from '@models/window';
 import { randomUUID } from 'node:crypto';
+import Utils from '@utils/utils';
 
 const APP_DATA_CACHE: IAppData = {
     header: {
@@ -14,6 +15,9 @@ const APP_DATA_CACHE: IAppData = {
     },
     tokens: {
         csrfToken: randomUUID()
+    },
+    serverInfo: {
+        baseUrl: Utils.getServerBaseUrl()
     }
 };
 

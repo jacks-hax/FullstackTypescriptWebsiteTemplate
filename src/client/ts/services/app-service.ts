@@ -1,11 +1,13 @@
 import HttpClient from '@client/utils/http-client';
-import JsonApiException from '@client/models/json-api-exception';
-import { JsonApiPayload } from 'jsonapi-types';
+import JsonApiPayload, { JsonApiException } from '@models/jsonapi';
 import { LoginForm } from 'form-types';
+import AppWindow from '@models/window';
+
+declare const window: AppWindow;
 
 export default class AppService extends HttpClient {
     constructor() {
-        super(window.location.protocol + '//' + window.location.hostname);
+        super(window.AppData.serverInfo.baseUrl + '/api');
     }
 
     public setCSRFToken(token: string): void {
@@ -22,7 +24,7 @@ export default class AppService extends HttpClient {
             username: formData.username,
             password: formData.password
         });
-        return this.handle(response);
+        return AppService.handle(response);
     }
 
     /**
@@ -30,13 +32,11 @@ export default class AppService extends HttpClient {
      * @param response The response to process
      * @returns {Promise<JsonApiPayload>}
      */
-    private async handle(response: Response): Promise<JsonApiPayload> {
+    public static async handle(response: Response): Promise<JsonApiPayload> {
         try {
             if (response.ok) {
-                const body: JsonApiPayload = (await response.json()) as JsonApiPayload;
-                return body;
+                return JsonApiPayload.from(await response.json());
             }
-            debugger;
             const contentType = response.headers.get('content-type');
             const isJson = contentType === 'applicatiion/json';
             throw new JsonApiException({

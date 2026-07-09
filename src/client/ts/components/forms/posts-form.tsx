@@ -1,9 +1,7 @@
 import * as React from 'react';
 
-// Models & Types
-import * as InternalEvents from '@client/events';
-import AppWindow from '@models/window';
-import IPost from '@models/post';
+// Services & Utilities
+import AppService from '@client/services/app-service';
 
 // Components
 import { AbstractInputHandle, HTMLAbstractInputElement } from '@client/components/input/peripherals';
@@ -11,9 +9,10 @@ import Wysiwyg from '@client/components/input/wysiwyg';
 import Input from '@client/components/input/input';
 import Spinner from '@client/components/spinner';
 
-import AppService from '@client/services/app-service';
-import { ResponseError } from '@models/errors';
-import JsonApiResponse from '@models/jsonapi';
+// Models & Types
+import * as InternalEvents from '@client/events';
+import AppWindow from '@models/window';
+import IPost from '@models/post';
 
 declare const window: AppWindow;
 
@@ -32,8 +31,7 @@ function PostForm(props: PostFormProps, ref: React.ForwardedRef<PostFormHandle>)
      * ------------------------------------------
      */
     //const [showSpinner, setShowSpinner] = React.useState<boolean>(false);
-    const [post, setPost] = React.useState<IPost>(props.post ?? {});
-    const [isValid, setIsValid] = React.useState<boolean>(false);
+    //const [isValid, setIsValid] = React.useState<boolean>(false);
     const [isLoading, setIsLoading] = React.useState<boolean>(false);
 
     /**
@@ -41,10 +39,11 @@ function PostForm(props: PostFormProps, ref: React.ForwardedRef<PostFormHandle>)
      * ----------------- REFS -------------------
      * ------------------------------------------
      */
+    const postRef = React.useRef<IPost>(props.post ?? {});
     const inputRefs: { [key in keyof IPost]: React.RefObject<AbstractInputHandle | null> } = {
         Title: React.useRef<AbstractInputHandle>(null),
         Slug: React.useRef<AbstractInputHandle>(null),
-        Status: React.useRef<AbstractInputHandle>(null),
+        //Status: React.useRef<AbstractInputHandle>(null),
         Body: React.useRef<AbstractInputHandle>(null)
     };
 
@@ -56,10 +55,8 @@ function PostForm(props: PostFormProps, ref: React.ForwardedRef<PostFormHandle>)
     const handleChange = (event: InternalEvents.ChangeEvent<HTMLAbstractInputElement>): void => {
         const param = event.currentTarget.name;
         const value = event.detail.value;
-        setPost({
-            ...post,
-            [param]: value
-        });
+        console.log('change event', param, value, postRef.current);
+        postRef.current[param as keyof IPost] = value;
         checkValidity();
     };
 
@@ -75,7 +72,7 @@ function PostForm(props: PostFormProps, ref: React.ForwardedRef<PostFormHandle>)
                 valid = false;
             }
         });
-        setIsValid(valid);
+        //setIsValid(valid);
         return valid;
     };
 
@@ -86,7 +83,7 @@ function PostForm(props: PostFormProps, ref: React.ForwardedRef<PostFormHandle>)
                 valid = false;
             }
         });
-        setIsValid(valid);
+        //setIsValid(valid);
         return valid;
     };
 
@@ -95,25 +92,30 @@ function PostForm(props: PostFormProps, ref: React.ForwardedRef<PostFormHandle>)
             throw new Error('Invalid form');
         }
         setIsLoading(true);
-        const service = new AppService();
-        service.setCSRFToken(window.AppData.tokens.csrfToken);
-        const promise = post.Id ? service.post('/posts', post) : service.patch(`/posts/${post.Id}`, post);
-        const response = await promise;
-        if (!response.ok) {
-            throw new ResponseError('Failed to save post', response);
-        }
         try {
-            const payload = JsonApiResponse.from(await response.json());
+            const service = new AppService();
+            service.setCSRFToken(window.AppData.tokens.csrfToken);
+            const post = postRef.current;
+            let promise: Promise<Response>;
+            if (post.Id) {
+                promise = service.patch(`/posts/${post.Id}`, post);
+            } else {
+                promise = service.post('/posts', post);
+            }
+            const response = await promise;
+            console.log(response);
+            const payload = await AppService.handle(response);
             if (payload.data) {
                 const responsePost = payload.data as IPost;
-                setPost(responsePost);
+                postRef.current = responsePost;
                 return responsePost;
             }
         } catch (error) {
-            console.error(error);
-            throw new ResponseError('Failed to process response from server', response);
+            throw error;
+        } finally {
+            setIsLoading(false);
         }
-        return post;
+        return postRef.current;
     };
 
     /**
@@ -126,7 +128,10 @@ function PostForm(props: PostFormProps, ref: React.ForwardedRef<PostFormHandle>)
         save
     }));
 
-    React.useEffect(() => setPost(props.post ?? {}), [props.post]);
+    React.useEffect(() => {
+        console.log('setting post from effect:', props.post);
+        postRef.current = props.post ?? {};
+    }, [props.post]);
 
     /**
      * ------------------------------------------
@@ -135,17 +140,17 @@ function PostForm(props: PostFormProps, ref: React.ForwardedRef<PostFormHandle>)
      */
 
     return (
-        <form className='container app-form'>
+        <div className='container'>
             {isLoading && <Spinner />}
-            <div className='row'>
-                <div className='col-9'>
+            <div className='row mb-3'>
+                <div className='col'>
                     <Input
                         ref={inputRefs.Title}
                         type='text'
-                        id='title'
-                        name='title'
+                        id='Title'
+                        name='Title'
                         label='Title'
-                        value={post.Title}
+                        value={postRef.current.Title}
                         minLength={2}
                         maxLength={64}
                         required
@@ -153,15 +158,17 @@ function PostForm(props: PostFormProps, ref: React.ForwardedRef<PostFormHandle>)
                     />
                 </div>
             </div>
-            <div className='row'>
-                <div className='col-9'>
+            <div className='row mb-3'>
+                <div className='col'>
                     <Input
                         ref={inputRefs.Slug}
                         type='text'
-                        id='slug'
-                        name='slug'
+                        id='Slug'
+                        name='Slug'
                         label='Slug'
-                        value={post.Slug}
+                        pattern='^[a-z0-9]+((-[a-z0-9]+)+)?$'
+                        messageWhenBadInput='Post slug must be in kebab-case-like-this'
+                        value={postRef.current.Slug}
                         minLength={2}
                         maxLength={64}
                         required
@@ -173,16 +180,18 @@ function PostForm(props: PostFormProps, ref: React.ForwardedRef<PostFormHandle>)
                 <div className='col'>
                     <Wysiwyg
                         ref={inputRefs.Body}
-                        id='body'
-                        name='body'
+                        id='Body'
+                        name='Body'
                         label='Html Body'
-                        value={post.Body}
+                        value={postRef.current.Body}
+                        minLength={2}
+                        maxLength={32768}
                         required
                         onChange={handleChange}
                     />
                 </div>
             </div>
-        </form>
+        </div>
     );
 }
 

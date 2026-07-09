@@ -123,8 +123,9 @@ function Modal(props: ModalProps, ref: React.ForwardedRef<ModalHandle>): React.J
                 <div className='modal-content'>
                     <div className='modal-header'>
                         <div className='col'>
-                            <div>{headerChildren}</div>
+                            <h4 className='modal-title text-center'>{props.title}</h4>
                         </div>
+                        {headerChildren && <div className='col-auto'>{headerChildren}</div>}
                         <div className='col-auto'>
                             <button
                                 type='button'

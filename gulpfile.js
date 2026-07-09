@@ -384,16 +384,8 @@ class Client {
 
 class Server {
     static get tasks() {
-        //const compilationTasks = [];
-        //if (ARGS.GATEWAY === 'admin' || ARGS.GATEWAY === 'all') {
-        //    compilationTasks.push(Server.compileAdmin);
-        //}
-        //if (ARGS.GATEWAY === 'public' || ARGS.GATEWAY === 'all') {
-        //    compilationTasks.push(Server.compilePublic);
-        //}
         const tasks = [
             Server.initalClean,
-            ///...compilationTasks,
             Server.compileTs,
             Server.portEnvironmentVariables,
             Server.resolveServerImports,
@@ -451,13 +443,22 @@ class Server {
     }
 
     // Task to ensure .env file exists for current environment, and copy .env file over to destination folder
-    static portEnvironmentVariables() {
-        const dotEnvName = `.env.${process.env.NODE_ENV}`;
+    static async portEnvironmentVariables() {
+        if (ARGS.GATEWAY === 'all') {
+            Server._portEnvironmentVariables('admin');
+            Server._portEnvironmentVariables('public');
+        } else {
+            Server._portEnvironmentVariables(ARGS.GATEWAY);
+        }
+    }
+
+    static _portEnvironmentVariables(gateway) {
+        const dotEnvName = `.env.${gateway}.${process.env.NODE_ENV}`;
         const dotEnvFile = path.resolve(__dirname, dotEnvName);
         if (!fs.existsSync(dotEnvFile)) {
             throw new Error(`${dotEnvName} file not found. Please run "npm run configure"`);
         }
-        return gulp.src(dotEnvFile).pipe(rename('.env')).pipe(gulp.dest(OUT_DIR_SERVER));
+        fs.cpSync(dotEnvFile, path.resolve(OUT_DIR_SERVER, dotEnvName.replace(`.${process.env.NODE_ENV}`, '')));
     }
 
     // Task to change all import aliases to relative paths
