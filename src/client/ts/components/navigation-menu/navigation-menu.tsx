@@ -17,7 +17,6 @@ import { publish, subscribe, unsubscribe } from '@client/events/pub-sub';
 
 // Types & Models
 import INavNode from '@models/nav';
-import toast from '@client/components/toast';
 
 export interface NavigationMenuProps {
     navigationNodes: Array<INavNode>;
@@ -89,10 +88,9 @@ function NavigationMenu(props: NavigationMenuProps, ref: React.ForwardedRef<HTML
         if (href) {
             navigate(href);
         } else {
-            Toast.showToast({
-                message: 'Sorry, but a link for this item could not be found. Please try again later.',
+            Toast.showErrorToast({
                 title: 'Navigation Error',
-                variant: 'error'
+                message: 'Sorry, but a link for this item could not be found. Please try again later.'
             });
         }
     };
@@ -106,7 +104,7 @@ function NavigationMenu(props: NavigationMenuProps, ref: React.ForwardedRef<HTML
     const navigate = (id: string) => {
         const node = NavUtils.findNode(id, props.navigationNodes);
         if (!node) {
-            toast.showToast({
+            Toast.showErrorToast({
                 title: 'Error',
                 message: 'Unable to locate selected page. This issue has been reported.'
             });

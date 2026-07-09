@@ -306,26 +306,44 @@ window.document.body.appendChild(container);
 createRoot(container).render(<ToastContainer ref={onContainerRender} />);
 
 // Export proxies to the toast container handle methods. If the container is not yet rendered, store the method calls in a queue to be executed when the container is rendered.
-export default {
-    showToast: (props: ToastProps): Promise<ToastHandle> => {
+export default class Toast {
+    public static showToast(props: ToastProps): Promise<ToastHandle> {
         if (containerHandle) {
             return containerHandle.showToast(props);
         }
         return new Promise<ToastHandle>((resolve) => callbacks.push((handle) => resolve(handle.showToast(props))));
-    },
-    showStoredToasts: async (): Promise<Array<ToastHandle>> => {
+    }
+
+    public static showErrorToast(props: ToastProps): Promise<ToastHandle> {
+        props = {
+            ...props,
+            variant: 'error'
+        };
+        return Toast.showToast(props);
+    }
+
+    public static showSuccessToast(props: ToastProps): Promise<ToastHandle> {
+        props = {
+            ...props,
+            variant: 'success'
+        };
+        return Toast.showToast(props);
+    }
+
+    public static async showStoredToasts(): Promise<Array<ToastHandle>> {
         if (containerHandle) {
             return containerHandle.showStoredToasts();
         }
         return new Promise<Array<ToastHandle>>((resolve) =>
             callbacks.push((handle) => resolve(handle.showStoredToasts()))
         );
-    },
-    storeToast: (props: ToastProps): void => {
+    }
+
+    public static storeToast(props: ToastProps): void {
         if (containerHandle) {
             containerHandle.storeToast(props);
         } else {
             callbacks.push((handle) => handle.storeToast(props));
         }
     }
-};
+}

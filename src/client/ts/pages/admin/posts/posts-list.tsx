@@ -6,8 +6,9 @@ import IPost from '@models/post';
 // Components
 import PostForm, { PostFormHandle } from '@client/components/forms/posts-form';
 import Modal, { ModalContent, ModalFooter, ModalHandle } from '@client/components/modal';
-import toast from '@client/components/toast';
 import Button from '@client/components/input/button';
+import { JsonApiException } from '@models/jsonapi';
+import Toast from '@client/components/toast';
 
 export interface PostsScreenProps {
     posts: Array<IPost>;
@@ -55,11 +56,22 @@ export default function PostsScreen(props: PostsScreenProps) {
             window.open(`${window.location.origin}/posts/${newPost.Id}`);
         } catch (error) {
             console.error(error);
-            toast.showToast({
-                variant: 'error',
-                title: 'Error Creating Post',
-                message: error instanceof Error ? error.message : 'Failed to create new post'
-            });
+            if (error instanceof JsonApiException) {
+                error.payload.errors?.forEach((error) => {
+                    if (error.title && error.detail) {
+                        Toast.showErrorToast({
+                            title: error.title,
+                            message: error.detail
+                        });
+                    }
+                });
+            } else {
+                Toast.showToast({
+                    variant: 'error',
+                    title: 'Error Creating Post',
+                    message: error instanceof Error ? error.message : 'Failed to create new post'
+                });
+            }
         }
     };
 
