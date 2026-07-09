@@ -47,6 +47,10 @@ export default function PostsScreen(props: PostsScreenProps) {
         modalRef.current?.show();
     };
 
+    const handleClickCancelNewPost = () => {
+        modalRef.current?.hide();
+    };
+
     const handleClickSaveNewPost = async () => {
         try {
             const newPost = await postFormRef.current?.save();
@@ -138,6 +142,13 @@ export default function PostsScreen(props: PostsScreenProps) {
                     <PostForm ref={postFormRef}></PostForm>
                 </ModalContent>
                 <ModalFooter>
+                    <Button
+                        id='cancel_new_post'
+                        name='cancel_new_post'
+                        className='btn-secondary'
+                        label='Cancel'
+                        onClick={handleClickCancelNewPost}
+                    />
                     <Button id='save_post' name='save_post' label='Save' onClick={handleClickSaveNewPost} />
                 </ModalFooter>
             </Modal>

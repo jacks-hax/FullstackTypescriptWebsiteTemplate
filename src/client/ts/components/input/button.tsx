@@ -13,8 +13,11 @@ export default function Button(props: ButtonProps) {
 
     React.useEffect(() => {
         let cn = props.className ?? DEFAULT_CLASSES;
-        if (!cn.includes('btn')) {
-            cn += 'btn';
+        if (!/(^| )btn( |$)/.test(cn)) {
+            cn += ' btn';
+        }
+        if (!/(^| )btn-/.test(cn)) {
+            cn += ' btn-primary';
         }
         setClassName(cn);
     }, [props.className]);
