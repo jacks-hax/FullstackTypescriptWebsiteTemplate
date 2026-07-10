@@ -8,13 +8,13 @@ import LoginForm from '@client/pages/public/login/login-form';
 import ReactUtils from '@client/utils/react';
 import * as EventUtils from '@client/events/utils';
 
-// Utilities
-import BrowserUtils from '@client/utils/browser';
+import AppWindow from '@models/window';
+declare const window: AppWindow;
 
 try {
     const root = ReactUtils.createRoot('root');
-    const csrfToken = BrowserUtils.getCookie('csrftoken') ?? 'tmp';
-    root.render(<LoginForm csrfToken={csrfToken} />);
+
+    root.render(<LoginForm csrfToken={window.AppData.csrfToken} />);
 
     // Prevent the page from scrolling down when the space key is pressed
     window.addEventListener('keydown', function (e: Event) {

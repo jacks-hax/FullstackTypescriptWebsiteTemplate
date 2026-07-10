@@ -99,3 +99,7 @@ CREATE TABLE IF NOT EXISTS MenuItem (
         ON UPDATE RESTRICT,
     PRIMARY KEY (Id)
 ) CHARACTER SET utf8mb4;
+
+CREATE TABLE IF NOT EXISTS ImageRef (
+    FileDescriptor INT
+)
