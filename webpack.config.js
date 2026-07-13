@@ -12,18 +12,15 @@ const __dirname = path.dirname(__filename);
 
 // Define source, dependencies, and output directories. Output and dependencies directory should be gitignored
 const PAGES_DIR = path.resolve(__dirname, 'src/client/ts/pages');
-console.log('wpc gw:', process.env.GATEWAY);
 const GATEWAY = process.env.GATEWAY || 'all';
-console.log('gw:', GATEWAY);
 const GATEWAYS = fs.readdirSync(PAGES_DIR).filter((opt) => opt !== 'shared' && (GATEWAY === 'all' || opt === GATEWAY));
 if (!GATEWAYS.length) {
     throw new Error(`Invalid gateway specified: ${GATEWAY}`);
 }
-console.log('Gateways:', GATEWAYS);
 
 // Dynamic entry map to pull in all files from the src directory and map them to relative paths in the output directory
 const entryMap = {
-    'header/index': path.resolve(__dirname, 'src/client/ts/header/index.tsx')
+    'app/index': path.resolve(__dirname, 'src/client/ts/app/index.tsx')
 };
 
 /**

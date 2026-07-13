@@ -1,6 +1,9 @@
 CREATE DATABASE IF NOT EXISTS {!database};
 USE {!database};
 
+-- NOTE: Id, CreatedDate, and LastModifiedDate are not included in these definitions to avoid repetitive fields
+-- SEE: bin/configure-database.ts for injection of standard fields that are applied to all objects
+
 CREATE TABLE IF NOT EXISTS User (
     Email NVARCHAR(255) NOT NULL,
     Phone NVARCHAR(32),
@@ -21,7 +24,7 @@ CREATE TABLE IF NOT EXISTS UserCredentialType (
 
 CREATE TABLE IF NOT EXISTS UserCredential (
     Value VARCHAR(4096) NOT NULL,
-    UserId CHAR(255) NOT NULL,
+    UserId CHAR({!id_size}) NOT NULL,
     Type NCHAR(32) NOT NULL,
     IsActive BOOLEAN DEFAULT TRUE,
     ExpirationDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP(),
@@ -37,7 +40,7 @@ CREATE TABLE IF NOT EXISTS UserCredential (
 ) CHARACTER SET utf8mb4;
 
 CREATE TABLE IF NOT EXISTS Organization (
-    Name NVARCHAR(255) NOT NULL,
+    Name VARCHAR(255) NOT NULL,
     Email NVARCHAR(255) NOT NULL,
     PRIMARY KEY (Id)
 ) CHARACTER SET utf8mb4;
@@ -45,16 +48,16 @@ CREATE TABLE IF NOT EXISTS Organization (
 CREATE TABLE IF NOT EXISTS OrganizationRole (
     Name NVARCHAR(255) NOT NULL,
     Label NVARCHAR(255) NOT NULL,
-    OrganizationId CHAR(255) NOT NULL,
+    OrganizationId CHAR({!id_size}) NOT NULL,
     PRIMARY KEY (Id)
 ) CHARACTER SET utf8mb4;
 
 CREATE UNIQUE INDEX IF NOT EXISTS RoleNameWithinOrg ON OrganizationRole(Name, OrganizationId);
 
 CREATE TABLE IF NOT EXISTS OrganizationUser (
-    OrganizationId CHAR(255) NOT NULL,
-    UserId CHAR(255) NOT NULL,
-    RoleId CHAR(255) NOT NULL,
+    OrganizationId CHAR({!id_size}) NOT NULL,
+    UserId CHAR({!id_size}) NOT NULL,
+    RoleId CHAR({!id_size}) NOT NULL,
     CONSTRAINT OrganizationUserOrganization
         FOREIGN KEY (OrganizationId) REFERENCES Organization(Id)
         ON DELETE CASCADE
@@ -86,20 +89,34 @@ CREATE TABLE IF NOT EXISTS Post (
 CREATE UNIQUE INDEX IF NOT EXISTS PostSlug ON Post(Slug);
 
 CREATE TABLE IF NOT EXISTS MenuItem (
-    Status NVARCHAR(64) NOT NULL,
+    Status NVARCHAR(63) NOT NULL,
     Title NVARCHAR(255) NOT NULL,
-    Description NVARCHAR(1024) NOT NULL,
-    Location NVARCHAR(255) NOT NULL,
-    IconUrl VARCHAR(255),
+    Description NVARCHAR(1022) NOT NULL,
+    Menu NVARCHAR(63) NOT NULL,
+    IconId VARCHAR(255),
     Url VARCHAR(255),
-    ParentId CHAR(255),
+    ParentId CHAR({!id_size}),
     CONSTRAINT ParentMenuItem
         FOREIGN KEY (ParentId) REFERENCES MenuItem(Id)
+        ON DELETE CASCADE
+        ON UPDATE RESTRICT,
+    CONSTRAINT IconFile
+        FOREIGN KEY (IconId) REFERENCES File(Id)
         ON DELETE CASCADE
         ON UPDATE RESTRICT,
     PRIMARY KEY (Id)
 ) CHARACTER SET utf8mb4;
 
-CREATE TABLE IF NOT EXISTS ImageRef (
-    FileDescriptor INT
-)
+CREATE TABLE IF NOT EXISTS File (
+    FileDescriptor UNSIGNED BIGINT,
+    Title NVARCHAR(255),
+    Url VARCHAR(255),
+    MimeType NVARCHAR(255),
+    Sharing NVARCHAR(32),
+    OwnerId CHAR({!id_size}),
+    CONSTRAINT FileOwner
+        FOREIGN KEY (OwnerId) REFERENCES User(Id)
+        ON DELETE CASCADE
+        ON UPDATE RESTRICT,
+    PRIMARY KEY (Id)
+) CHARACTER SET utf8mb4;

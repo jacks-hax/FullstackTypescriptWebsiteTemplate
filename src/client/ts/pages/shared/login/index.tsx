@@ -2,7 +2,7 @@ import 'bootstrap';
 import * as React from 'react';
 
 // Page Components
-import LoginForm from '@client/pages/public/login/login-form';
+import LoginForm from '@client/pages/shared/login/login-form';
 
 // Utils
 import ReactUtils from '@client/utils/react';

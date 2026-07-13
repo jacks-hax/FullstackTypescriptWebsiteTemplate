@@ -1,4 +1,45 @@
+import * as EventUtils from '@client/events/utils';
 export default class BrowserUtils {
+    /**
+     * Ensure that the page always scrolls to the top when it is loaded or reloaded
+     */
+    public static scrollTopOnLoad() {
+        history.scrollRestoration = 'manual';
+        const scrollY = window.scrollY;
+        const scrollTopOnLoad = () => {
+            if (window.scrollY === scrollY) {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            }
+            document.removeEventListener('load', scrollTopOnLoad);
+        };
+        if (scrollY !== 0) {
+            if (document.readyState === 'complete') {
+                scrollTopOnLoad();
+            } else {
+                document.addEventListener('load', scrollTopOnLoad);
+            }
+        }
+    }
+
+    public static preventSpacebarScrolling() {
+        window.addEventListener('keydown', function (e: Event) {
+            if (EventUtils.isSpaceKeyPress(e as unknown as React.KeyboardEvent) && e.target == document.body) {
+                e.preventDefault();
+            }
+        });
+    }
+
+    public static findParentByTagName(element: HTMLElement | null, tagName: string): HTMLElement | null {
+        let parent: HTMLElement | null = element;
+        while (parent !== null && parent.tagName !== tagName.toUpperCase()) {
+            parent = parent.parentElement;
+        }
+        return parent;
+    }
+
     private static copyToClipboardLegacy(text: string): void {
         const textArea = document.createElement('textarea');
         textArea.value = text;

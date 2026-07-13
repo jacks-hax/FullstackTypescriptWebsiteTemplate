@@ -7,7 +7,6 @@ import IPost from '@models/post';
 
 // Utils
 import ReactUtils from '@client/utils/react';
-import * as EventUtils from '@client/events/utils';
 
 import PostsPage from './posts-list';
 
@@ -21,13 +20,6 @@ declare const window: FrameWindow;
 try {
     const root = ReactUtils.createRoot('root');
     root.render(<PostsPage posts={window.AppData.posts} />);
-
-    // Prevent the page from scrolling down when the space key is pressed
-    window.addEventListener('keydown', function (e: Event) {
-        if (EventUtils.isSpaceKeyPress(e as unknown as React.KeyboardEvent) && e.target == document.body) {
-            e.preventDefault();
-        }
-    });
 } catch (error) {
     console.error(error);
 }

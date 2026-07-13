@@ -1,5 +1,16 @@
 import INavNode from './nav';
 
+interface SiteMap {
+    /**
+     * TODO:
+     * - Figure this data struct out
+     * - Add logic to backend to generate sitemap based on file structure of react pages
+     * - Update app.tsx to check sitemap before attempting to fetch file
+     *   > What to do if path is not found in sitemap?
+     * - Update static files handler backend to check cached sitemap (maybe use same data strutct here?)
+     */
+}
+
 export interface IHeader {
     menuItems: Array<INavNode>;
     logoUrl: string;
@@ -11,6 +22,7 @@ export interface IFooter {
 
 export interface IServerInfo {
     baseUrl: string;
+    siteMap: Record<string, string>;
 }
 
 export interface IAppTokens {

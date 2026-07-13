@@ -19,6 +19,7 @@ async function getPost(request: Request, response: Response, next: Function) {
         return response.redirect('/404');
     }
     response.appData!.post = post;
+    response.page = 'post';
     next();
 }
 

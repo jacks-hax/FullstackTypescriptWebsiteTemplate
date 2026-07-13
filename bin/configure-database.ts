@@ -10,8 +10,10 @@ import url from 'url';
 const __filename: string = url.fileURLToPath(import.meta.url);
 const __dirname: string = path.dirname(__filename);
 
+const ID_SIZE = 63;
+
 const SYSTEM_FIELDS = [
-    'Id CHAR(63) NOT NULL',
+    `Id CHAR(${ID_SIZE}) NOT NULL`,
     'CreatedTimestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP()',
     'LastModifiedTimestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP()'
 ];
@@ -24,6 +26,9 @@ export default async function main(): Promise<void> {
             const appSchemaSqlFile = path.resolve('sql/app-schema.sql');
             console.log('Executing SQL in', appSchemaSqlFile);
             await MariaDBAdmin.execFromFile(appSchemaSqlFile, (sql: string) => {
+                sql = MariaDBAdmin.replaceTemplateLiterals(sql, {
+                    id_size: ID_SIZE.toString()
+                });
                 const lines = sql.split('\n');
                 for (let i = 0; i < lines.length; i++) {
                     const line = lines[i];

@@ -10,6 +10,7 @@ declare module 'express' {
     export interface Response {
         appData?: IAppData;
         cspNonce?: string;
+        page?: string;
     }
 }
 

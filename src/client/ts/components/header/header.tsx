@@ -1,9 +1,9 @@
-import 'bootstrap';
 import * as React from 'react';
+//import 'bootstrap';
 
 // Page Components
-import DesktopMenu from '@client/header/desktop-menu';
-import MobileMenu from '@client/header/mobile-menu';
+import DesktopHeader from '@client/components/header/desktop';
+import MobileHeader from '@client/components/header/mobile';
 
 // Utils
 import BrowserUtils from '@client/utils/browser';
@@ -61,7 +61,7 @@ export default function Header(props: IHeader): React.JSX.Element {
                         </a>
                     </div>
                 </div>
-                {isMobile ? <MobileMenu {...props} /> : <DesktopMenu {...props} />}
+                {isMobile ? <MobileHeader {...props} /> : <DesktopHeader {...props} />}
             </div>
         </div>
     );

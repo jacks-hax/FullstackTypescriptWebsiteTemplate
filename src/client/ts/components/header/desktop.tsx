@@ -3,9 +3,7 @@ import * as React from 'react';
 import INavNode from '@models/nav';
 import { IHeader } from '@models/window';
 
-const EXTERNAL_LINKS = ['Careers', 'Videos', 'Partner Resources', 'PDO Customer Portal'];
-
-export default function DesktopMenu(props: IHeader): React.JSX.Element {
+export default function DesktopHeader(props: IHeader): React.JSX.Element {
     /**
      * ----------------------------------------
      * -------------- STATE -------------------
@@ -54,7 +52,7 @@ export default function DesktopMenu(props: IHeader): React.JSX.Element {
             <React.Fragment>
                 {items.map((menuItem: INavNode) => {
                     if (!menuItem.Title || !menuItem.Id || !menuItem.Url) {
-                        console.log('Invalid menu item:', menuItem);
+                        console.warn('Invalid menu item:', menuItem);
                         return;
                     }
                     let childrenElement: React.JSX.Element = <></>;
@@ -64,8 +62,12 @@ export default function DesktopMenu(props: IHeader): React.JSX.Element {
                     const itemCurrentClass =
                         menuItem.Url === window.location.href ? 'current-menu-item current_page_item' : '';
                     const classList = `menu-item menu-item-${menuItem.Id} ${itemCurrentClass}`;
-                    const isExternalLink = EXTERNAL_LINKS.includes(menuItem.Title);
-                    const windowTarget = isExternalLink ? '_blank' : '_self';
+                    let windowTarget = '_self';
+                    try {
+                        if (new URL(menuItem.Url).origin !== window.location.origin) {
+                            windowTarget = '_blank';
+                        }
+                    } catch {}
 
                     // If the menu item has a parent, render it as a child item
                     let content = <>{menuItem.Title}</>;

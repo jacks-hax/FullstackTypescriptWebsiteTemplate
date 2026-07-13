@@ -115,7 +115,7 @@ function indexStaticDir(dirname: string): FileNode {
     return index;
 }
 
-function validateStaticFile(rootNode: FileNode, path: string): boolean {
+function validateStaticPage(rootNode: FileNode, path: string): boolean {
     let currentNode: FileNode = rootNode;
     if (!path?.length || path === '/') {
         path = '/home';
@@ -143,19 +143,22 @@ export default function StaticFiles(reactPathPrefix: string): Express.RequestHan
     return (request: Request, response: Response, next: Function) => {
         try {
             if (request.method !== 'GET') {
-                return next();
-            }
-            let requestPath = request.path.replaceAll('..', '');
-            let iters = 0;
-            while (requestPath.includes('//') && iters++ < 10) {
-                requestPath = requestPath.replaceAll('//', '/');
-            }
-            console.log('iters:', iters);
-            if (iters === 10) {
-                response.status(400).send('fuckoff');
+                return next(); // Resolves to 404
             }
 
-            console.log('requestPath:', requestPath);
+            // Path sanatization
+            let requestPath = request.path;
+            if (response.page) {
+                requestPath = '/' + response.page;
+            } else {
+                while (requestPath.includes('//')) {
+                    requestPath = requestPath.replaceAll('//', '/').replaceAll('..', '');
+                }
+            }
+
+            console.log('static file requested:', requestPath);
+            // If static file, check cache, then read from disk if necessary
+            // TODO : Implement popularity based caching
             if (requestPath.startsWith('/static')) {
                 const contentType = Utils.getContentType(path.basename(requestPath));
                 response.setHeader(Constants.HEADERS.CONTENT_TYPE, contentType);
@@ -174,7 +177,8 @@ export default function StaticFiles(reactPathPrefix: string): Express.RequestHan
                     }
                 }
             } else {
-                if (!validateStaticFile(ROOT_PAGE_NODE, requestPath)) {
+                // If not in /static dir, check pages
+                if (!validateStaticPage(ROOT_PAGE_NODE, requestPath)) {
                     return next(); // This will resolve to a 404
                 }
                 response.setHeader(Constants.HEADERS.CONTENT_TYPE, Constants.CONTENT_TYPES.HTML);

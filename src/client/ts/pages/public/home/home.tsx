@@ -1,15 +1,7 @@
 import * as React from 'react';
 
-import INavNode from '@models/nav';
-
-// Components
-import Frame from '@client/components/frame/frame';
-import NavigationMenu from '@client/components/navigation-menu/navigation-menu';
-
-export interface HomeScreenProps {
-    navigationNodes: Array<INavNode>;
-}
-export default function HomeScreen(props: HomeScreenProps) {
+export interface HomeScreenProps {}
+export default function HomeScreen(_: HomeScreenProps) {
     /**
      * ------------------------------------------
      * ---------------- STATE -------------------
@@ -22,14 +14,12 @@ export default function HomeScreen(props: HomeScreenProps) {
      * ----------------- REFS -------------------
      * ------------------------------------------
      */
-    const currentLocationIndexRef = React.useRef<number>(0);
 
     /**
      * ------------------------------------------
      * ------------ EVENT HANDLERS --------------
      * ------------------------------------------
      */
-    function handleNavigate(_: INavNode) {}
 
     /**
      * ------------------------------------------
@@ -37,15 +27,8 @@ export default function HomeScreen(props: HomeScreenProps) {
      * ------------------------------------------
      */
     return (
-        <Frame title='test'>
-            <NavigationMenu
-                navigationNodes={props.navigationNodes}
-                currentLocationIndex={currentLocationIndexRef.current}
-                onNavigate={handleNavigate}
-            />
-            <>
-                <h1>Hello, world!</h1>
-            </>
-        </Frame>
+        <div className='container'>
+            <h1>Hello, world!</h1>
+        </div>
     );
 }
