@@ -99,7 +99,7 @@ export default function LoginForm(_: LoginFormProps): React.JSX.Element {
         setIsLoading(true);
         try {
             const service = new AppService();
-            service.applyCSRFToken();
+            await service.applyCSRFToken();
             await service.login(formData);
             Toast.showSuccessToast({
                 title: 'Success!',

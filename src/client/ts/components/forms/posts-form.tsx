@@ -94,7 +94,7 @@ function PostForm(props: PostFormProps, ref: React.ForwardedRef<PostFormHandle>)
         setIsLoading(true);
         try {
             const service = new AppService();
-            service.setCSRFToken(window.AppData.tokens.csrfToken);
+            await service.applyCSRFToken();
             const post = postRef.current;
             let promise: Promise<Response>;
             if (post.Id) {
