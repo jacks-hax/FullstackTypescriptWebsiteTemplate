@@ -3,6 +3,7 @@ import Header from '@client/components/header/header';
 import BrowserUtils from '@client/utils/browser';
 import AppWindow from '@models/window';
 import ReactEventBus, { ReactEvent } from '@client/utils/react-event-bus';
+import Spinner from '@client/components/spinner';
 declare const window: AppWindow;
 
 export default function App(): React.JSX.Element {
@@ -25,27 +26,30 @@ export default function App(): React.JSX.Element {
             }
             const anchorLink = targetElement as HTMLAnchorElement;
             const href = anchorLink.href ?? '';
-            let isSameOrigin = false;
+            let linkUrl;
             if (href.startsWith('/')) {
-                isSameOrigin = true;
+                linkUrl = new URL(window.location.origin + href);
             } else if (/^http(s)?:\/\//.test(href)) {
-                const url = new URL(anchorLink.href);
-                if (url.origin === window.location.origin) {
-                    isSameOrigin = true;
-                }
+                linkUrl = new URL(anchorLink.href);
             }
-            if (!isSameOrigin) {
+            if (!linkUrl || linkUrl.origin !== window.location.origin) {
                 return;
             }
             event.preventDefault();
+            BrowserUtils.loadScript(linkUrl.href);
             console.log('An anchor was clicked!');
         };
         document.documentElement.addEventListener('click', handleGlobalClick);
+        return () => {
+            ReactEventBus.removeEventListener(ReactEventBus.SYSTEM_EVENTS.CMP_LOADED, onComponentLoaded);
+            document.documentElement.removeEventListener('click', handleGlobalClick);
+        };
     }, []);
+
     return (
         <div>
             <Header {...window.AppData.header} />
-            <React.Suspense></React.Suspense>
+            <React.Suspense fallback={<Spinner />}>{bodyComponent}</React.Suspense>
         </div>
     );
 }

@@ -111,4 +111,20 @@ export default class BrowserUtils {
         }
         return null;
     }
+
+    public static loadScript(src: string): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            const scriptElement = document.createElement('script');
+            scriptElement.src = src;
+            document.body.appendChild(scriptElement);
+            scriptElement.addEventListener('error', (event: Event) => {
+                console.error('Error loading script:', event);
+                reject();
+            });
+            scriptElement.addEventListener('load', (event: Event) => {
+                console.log('Script loaded', src, event);
+                resolve();
+            });
+        });
+    }
 }

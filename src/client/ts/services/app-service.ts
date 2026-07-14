@@ -10,8 +10,20 @@ export default class AppService extends HttpClient {
         super(window.AppData.serverInfo.baseUrl + '/api');
     }
 
-    public setCSRFToken(token: string): void {
-        this.setHeader('X-CSRF-Token', token);
+    public async applyCSRFToken(): Promise<void> {
+        this.setHeader('X-CSRF-Token', await this.getCSRFToken());
+    }
+
+    public async getCSRFToken(): Promise<string> {
+        if (!!window.AppData?.tokens?.csrfToken?.length) {
+            return window.AppData.tokens.csrfToken;
+        }
+        const response = await this.get('/api/csrf');
+        const payload = await AppService.handle(response);
+        if (typeof payload.data !== 'string') {
+            throw new Error('Unable to retrieve fresh csrf token.');
+        }
+        return payload.data;
     }
 
     /**
@@ -20,7 +32,7 @@ export default class AppService extends HttpClient {
      * @returns {Promise<JsonApiPayload>}
      */
     public async login(formData: LoginForm): Promise<JsonApiPayload> {
-        const response = await this.post('/v1/api/login', {
+        const response = await this.post('/api/login', {
             username: formData.username,
             password: formData.password
         });

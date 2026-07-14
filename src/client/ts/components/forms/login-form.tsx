@@ -17,13 +17,9 @@ import { LoginForm as LoginFormData } from 'form-types';
 // Http webservice client
 import AppService from '@client/services/app-service';
 
-// Utilities
+export interface LoginFormProps {}
 
-export interface LoginFormProps {
-    csrfToken: string;
-}
-
-export default function LoginForm(props: LoginFormProps): React.JSX.Element {
+export default function LoginForm(_: LoginFormProps): React.JSX.Element {
     /**
      * ------------------------------------------
      * ---------------- STATE -------------------
@@ -103,7 +99,7 @@ export default function LoginForm(props: LoginFormProps): React.JSX.Element {
         setIsLoading(true);
         try {
             const service = new AppService();
-            service.setCSRFToken(props.csrfToken);
+            service.applyCSRFToken();
             await service.login(formData);
             Toast.showSuccessToast({
                 title: 'Success!',

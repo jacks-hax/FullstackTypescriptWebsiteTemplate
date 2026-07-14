@@ -1,15 +1,13 @@
 import 'bootstrap';
 import * as React from 'react';
+import PostPage from '@client/pages/admin/post/post-page';
 
 // Types & Models
 import AppWindow, { IAppData } from '@models/window';
 import IPost from '@models/post';
 
 // Utils
-import ReactUtils from '@client/utils/react';
-import * as EventUtils from '@client/events/utils';
-
-import PostPage from '@client/pages/admin/post/post-page';
+import ReactEventBus from '@client/utils/react-event-bus';
 
 export interface FrameWindow extends AppWindow {
     AppData: IAppData & {
@@ -19,16 +17,7 @@ export interface FrameWindow extends AppWindow {
 declare const window: FrameWindow;
 
 try {
-    const root = ReactUtils.createRoot('root');
-
-    root.render(<PostPage post={window.AppData.post} />);
-
-    // Prevent the page from scrolling down when the space key is pressed
-    window.addEventListener('keydown', function (e: Event) {
-        if (EventUtils.isSpaceKeyPress(e as unknown as React.KeyboardEvent) && e.target == document.body) {
-            e.preventDefault();
-        }
-    });
+    ReactEventBus.componentLoaded('/admin/post', <PostPage post={window.AppData.post} />);
 } catch (error) {
     console.error(error);
 }
