@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 
 // Utils
 import BrowserUtils from '@client/utils/browser';
+import Constants from '@constants/client';
 // import { getTimeDifference } from '@client/utils/datetime';
 
 export interface ToastProps {
@@ -12,7 +13,8 @@ export interface ToastProps {
     message: string;
     timestamp?: Date | string;
     variant?: 'success' | 'error';
-    mode?: string;
+    mode?: 'sticky' | 'pester' | 'fade';
+    durationMs?: number;
     onDestroy?: () => void;
 }
 
@@ -44,25 +46,8 @@ const SingleToast = React.forwardRef((props: ToastProps, ref: React.ForwardedRef
     const idRef = React.useRef<string>(props.id ?? `${props.title}${props.message}${props.variant}`);
     const elementRef = React.useRef<HTMLDivElement | null>(null);
     const boostrapRef = React.useRef<BootstrapToast | null>(null);
+    const fadeTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
     const isDestroyed = React.useRef(false);
-
-    /**
-     * ------------------------------------------
-     * ------------- EVENT HANDLERS -------------
-     * ------------------------------------------
-     */
-
-    const onRender = (element: HTMLDivElement | null) => {
-        if (!element) {
-            return;
-        }
-        elementRef.current = element;
-        boostrapRef.current = BootstrapToast.getOrCreateInstance(element);
-        if (!element.classList.contains('show')) {
-            boostrapRef.current.show();
-        }
-        element.addEventListener('hidden.bs.toast', destroy);
-    };
 
     /**
      * ------------------------------------------
@@ -104,6 +89,31 @@ const SingleToast = React.forwardRef((props: ToastProps, ref: React.ForwardedRef
         if (typeof props.onDestroy === 'function') {
             props.onDestroy();
         }
+        if (fadeTimeoutRef.current) {
+            clearTimeout(fadeTimeoutRef.current);
+        }
+    };
+
+    /**
+     * ------------------------------------------
+     * ------------- EVENT HANDLERS -------------
+     * ------------------------------------------
+     */
+
+    const onRender = (element: HTMLDivElement | null) => {
+        if (!element) {
+            return;
+        }
+        elementRef.current = element;
+        boostrapRef.current = BootstrapToast.getOrCreateInstance(element);
+        if (!element.classList.contains('show')) {
+            boostrapRef.current.show();
+        }
+        if (props.mode === 'pester' || props.mode === 'fade' || props.durationMs) {
+            const duration = props.durationMs || 6000;
+            fadeTimeoutRef.current = setTimeout(destroy, duration);
+        }
+        element.addEventListener('hidden.bs.toast', destroy);
     };
 
     /**
@@ -314,12 +324,20 @@ export default class Toast {
         return new Promise<ToastHandle>((resolve) => callbacks.push((handle) => resolve(handle.showToast(props))));
     }
 
-    public static showErrorToast(props: ToastProps): Promise<ToastHandle> {
-        props = {
-            ...props,
-            variant: 'error'
+    public static showErrorToast(props: ToastProps | string): Promise<ToastHandle> {
+        const errorProps: ToastProps = {
+            variant: 'error',
+            mode: 'sticky',
+            title: 'Error',
+            message: Constants.GENERIC_FORM_ERROR_MSG
         };
-        return Toast.showToast(props);
+        if (typeof props === 'string') {
+            errorProps.message = props;
+        } else {
+            Object.assign(errorProps, props);
+            props.variant = 'error';
+        }
+        return Toast.showToast(errorProps);
     }
 
     public static showSuccessToast(props: ToastProps): Promise<ToastHandle> {
