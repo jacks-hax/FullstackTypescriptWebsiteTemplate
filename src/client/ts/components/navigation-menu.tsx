@@ -104,10 +104,7 @@ function NavigationMenu(props: NavigationMenuProps, ref: React.ForwardedRef<HTML
     const navigate = (id: string) => {
         const node = NavUtils.findNode(id, props.navigationNodes);
         if (!node) {
-            Toast.showErrorToast({
-                title: 'Error',
-                message: 'Unable to locate selected page. This issue has been reported.'
-            });
+            Toast.showErrorToast('Unable to locate selected page. This issue has been reported.');
             return;
         }
         props.onNavigate(node);

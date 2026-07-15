@@ -5,7 +5,10 @@ import { createRoot } from 'react-dom/client';
 // Utils
 import BrowserUtils from '@client/utils/browser';
 import Constants from '@constants/client';
+import { JsonApiException } from '@models/jsonapi';
 // import { getTimeDifference } from '@client/utils/datetime';
+
+//const MAX_PARALLEL_TOASTS = 3;
 
 export interface ToastProps {
     id?: string;
@@ -47,7 +50,8 @@ const SingleToast = React.forwardRef((props: ToastProps, ref: React.ForwardedRef
     const elementRef = React.useRef<HTMLDivElement | null>(null);
     const boostrapRef = React.useRef<BootstrapToast | null>(null);
     const fadeTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
-    const isDestroyed = React.useRef(false);
+    const isDestroyed = React.useRef<boolean>(false);
+    const renderCallback = React.useRef<Function | null>(null);
 
     /**
      * ------------------------------------------
@@ -62,6 +66,7 @@ const SingleToast = React.forwardRef((props: ToastProps, ref: React.ForwardedRef
             elementRef.current.classList.add('show');
         } else {
             console.error('Could not show toast');
+            renderCallback.current = show;
         }
     };
 
@@ -72,6 +77,7 @@ const SingleToast = React.forwardRef((props: ToastProps, ref: React.ForwardedRef
             elementRef.current.classList.remove('show');
         } else {
             console.error('Could not hide toast');
+            renderCallback.current = hide;
         }
     };
 
@@ -108,6 +114,9 @@ const SingleToast = React.forwardRef((props: ToastProps, ref: React.ForwardedRef
         boostrapRef.current = BootstrapToast.getOrCreateInstance(element);
         if (!element.classList.contains('show')) {
             boostrapRef.current.show();
+        }
+        if (renderCallback.current != null) {
+            renderCallback.current();
         }
         if (props.mode === 'pester' || props.mode === 'fade' || props.durationMs) {
             const duration = props.durationMs || 6000;
@@ -311,7 +320,6 @@ const onContainerRender = (handle: ToastContainerHandle | null) => {
 
 // Generate a wrapper for the toast container and render it
 const container = document.createElement('div');
-//debugger;
 window.document.body.appendChild(container);
 createRoot(container).render(<ToastContainer ref={onContainerRender} />);
 
@@ -324,7 +332,10 @@ export default class Toast {
         return new Promise<ToastHandle>((resolve) => callbacks.push((handle) => resolve(handle.showToast(props))));
     }
 
-    public static showErrorToast(props: ToastProps | string): Promise<ToastHandle> {
+    public static async showErrorToast(props: any): Promise<ToastHandle> {
+        if (!props) {
+            props = Constants.GENERIC_FORM_ERROR_MSG;
+        }
         const errorProps: ToastProps = {
             variant: 'error',
             mode: 'sticky',
@@ -333,11 +344,34 @@ export default class Toast {
         };
         if (typeof props === 'string') {
             errorProps.message = props;
-        } else {
-            Object.assign(errorProps, props);
-            props.variant = 'error';
+        } else if (typeof props === 'object') {
+            if (props instanceof Error) {
+                errorProps.message = props.message;
+            } else if (props instanceof JsonApiException) {
+                let handle: ToastHandle | null = null;
+                props.payload.errors?.forEach(async (error) => {
+                    if (error.title && error.detail) {
+                        handle = await Toast.showErrorToast({
+                            title: error.title,
+                            message: error.detail
+                        });
+                    }
+                });
+                if (handle) {
+                    return handle;
+                } else if (!!props.payload.data) {
+                    if (typeof props.payload.data === 'string') {
+                        errorProps.message = props.payload.data;
+                    } else {
+                        errorProps.message = props.payload.data.toString();
+                    }
+                }
+            } else {
+                Object.assign(errorProps, props);
+                props.variant = 'error';
+            }
         }
-        return Toast.showToast(errorProps);
+        return await Toast.showToast(errorProps);
     }
 
     public static showSuccessToast(props: ToastProps): Promise<ToastHandle> {

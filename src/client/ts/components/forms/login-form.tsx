@@ -8,7 +8,7 @@ import URLUtils from '@client/utils/url';
 
 // Events & Toasts
 import * as InternalEvents from '@client/events';
-import Toast, { ToastProps } from '@client/components/toast';
+import Toast from '@client/components/toast';
 
 // Types & Models
 import { JsonApiException } from '@models/jsonapi';
@@ -16,6 +16,7 @@ import { LoginForm as LoginFormData } from 'form-types';
 
 // Http webservice client
 import AppService from '@client/services/app-service';
+import Constants from '@constants/client';
 
 export interface LoginFormProps {}
 
@@ -106,12 +107,9 @@ export default function LoginForm(_: LoginFormProps): React.JSX.Element {
                 message: 'You have been successfully logged in.'
             });
         } catch (error) {
-            const toastProps: ToastProps = {
-                title: 'Error',
-                message: 'There was an error submitting your request. Please try again.'
-            };
+            let errorMessage = Constants.GENERIC_FORM_ERROR_MSG;
             if (error instanceof Error) {
-                toastProps.message = error.message;
+                errorMessage = error.message;
             }
             if (error instanceof JsonApiException) {
                 error.payload.errors?.forEach((error) => {
@@ -120,8 +118,7 @@ export default function LoginForm(_: LoginFormProps): React.JSX.Element {
                     });
                 });
             }
-            Toast.showErrorToast(toastProps);
-            console.error('Error:', error);
+            Toast.showErrorToast(errorMessage);
         } finally {
             setIsLoading(false);
         }

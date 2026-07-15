@@ -2,13 +2,17 @@ import * as React from 'react';
 
 // Models & Types
 import IPost from '@models/post';
+import { JsonApiException } from '@models/jsonapi';
 
 // Components
 import PostForm, { PostFormHandle } from '@client/components/forms/posts-form';
 import Modal, { ModalContent, ModalFooter, ModalHandle } from '@client/components/modal';
 import Button from '@client/components/input/button';
-import { JsonApiException } from '@models/jsonapi';
 import Toast from '@client/components/toast';
+
+// Utils & Services
+import AppService from '@client/services/app-service';
+import Spinner from '@client/components/spinner';
 
 export interface PostsScreenProps {
     posts: Array<IPost>;
@@ -20,7 +24,7 @@ export default function PostsScreen(props: PostsScreenProps) {
      * ---------------- STATE -------------------
      * ------------------------------------------
      */
-    //const [showSpinner, setShowSpinner] = React.useState<boolean>(false);
+    const [showSpinner, setShowSpinner] = React.useState<boolean>(false);
     const [posts, setPosts] = React.useState<Array<IPost>>(props.posts);
 
     /**
@@ -30,13 +34,6 @@ export default function PostsScreen(props: PostsScreenProps) {
      */
     const modalRef = React.useRef<ModalHandle>(null);
     const postFormRef = React.useRef<PostFormHandle>(null);
-
-    /**
-     * ------------------------------------------
-     * ---------------- EFFECTS -----------------
-     * ------------------------------------------
-     */
-    React.useEffect(() => setPosts(props.posts), [props.posts]);
 
     /**
      * ------------------------------------------
@@ -87,6 +84,32 @@ export default function PostsScreen(props: PostsScreenProps) {
         return `${window.location.origin}/posts/${post.Id}`;
     };
 
+    const fetchPosts = async () => {
+        try {
+            setShowSpinner(true);
+            const appService = new AppService();
+            await appService.applyCSRFToken();
+            const response = await appService.get('/admin/posts');
+            const payload = await AppService.handle(response);
+            console.log(payload);
+            setPosts(payload.data as Array<IPost>);
+        } catch (error) {
+            Toast.showErrorToast(error);
+        } finally {
+            setShowSpinner(false);
+        }
+    };
+
+    /**
+     * ------------------------------------------
+     * ---------------- EFFECTS -----------------
+     * ------------------------------------------
+     */
+    React.useEffect(() => setPosts(props.posts), [props.posts]);
+    React.useEffect(() => {
+        fetchPosts();
+    }, []);
+
     /**
      * ------------------------------------------
      * -------------- RENDERING -----------------
@@ -126,6 +149,11 @@ export default function PostsScreen(props: PostsScreenProps) {
                     </div>
                 </div>
                 <div className='container'>
+                    {showSpinner && (
+                        <div className='row'>
+                            <Spinner relative />
+                        </div>
+                    )}
                     <div className='row bg-secondary text-light'>
                         <div className='col'>Title</div>
                         <div className='col'>Slug</div>

@@ -10,8 +10,4 @@ import ReactEventBus from '@client/utils/react-event-bus';
 import AppWindow from '@models/window';
 declare const window: AppWindow;
 
-try {
-    ReactEventBus.componentLoaded('/login', <LoginForm />);
-} catch (error) {
-    console.error(error);
-}
+ReactEventBus.componentLoaded('/login', <LoginForm />);
