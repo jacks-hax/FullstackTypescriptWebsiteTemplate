@@ -17,7 +17,8 @@ const APP_DATA_CACHE: IAppData = {
         csrfToken: randomUUID()
     },
     serverInfo: {
-        baseUrl: Utils.getServerBaseUrl()
+        baseUrl: Utils.getServerBaseUrl(),
+        siteIndex: Utils.getSiteIndex()
     }
 };
 

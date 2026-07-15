@@ -1,6 +1,6 @@
 import INavNode from './nav';
 
-interface SiteMap {
+export interface ISiteIndex {
     /**
      * TODO:
      * - Figure this data struct out
@@ -22,7 +22,7 @@ export interface IFooter {
 
 export interface IServerInfo {
     baseUrl: string;
-    siteMap: Record<string, string>;
+    siteIndex: ISiteIndex;
 }
 
 export interface IAppTokens {

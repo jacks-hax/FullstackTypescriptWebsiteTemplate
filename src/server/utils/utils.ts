@@ -4,6 +4,7 @@ import JsonApiResponse from '@models/jsonapi';
 import Constants from '@constants/shared';
 import StringUtils from '@utils/string';
 import { Response } from 'express';
+import { ISiteIndex } from '@models/window';
 
 export default class Utils {
     /**
@@ -18,6 +19,11 @@ export default class Utils {
         }
         baseUrl += process.env.GATEWAY_PATH;
         return new URL(baseUrl).href.replace(/\/+$/, '');
+    }
+
+    public static getSiteIndex(): ISiteIndex {
+        const siteIndex: ISiteIndex = {};
+        return siteIndex;
     }
 
     /**
