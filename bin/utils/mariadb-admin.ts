@@ -46,13 +46,15 @@ export default class MariaDBAdmin {
         if (MariaDBAdmin.mysqlEnvironmentVarsAreSet()) {
             return;
         }
-        const dotEnvFile = path.resolve(`.env.${process.env.NODE_ENV}`);
+        const adminDotEnvFile = path.resolve(`.env.admin.${process.env.NODE_ENV}`);
+        const publicDotEnvFile = path.resolve(`.env.public.${process.env.NODE_ENV}`);
         process.env = {
             ...process.env,
-            ...sourceShellConfig(dotEnvFile)
+            ...sourceShellConfig(adminDotEnvFile),
+            ...sourceShellConfig(publicDotEnvFile)
         };
         if (!MariaDBAdmin.mysqlEnvironmentVarsAreSet()) {
-            console.error(`MySQL configuration not found in ${dotEnvFile}`);
+            console.error(`MySQL configuration not found in ${adminDotEnvFile} or ${publicDotEnvFile}`);
             console.error('Please run `npm run configure` and try again.');
             process.exit(1);
         }

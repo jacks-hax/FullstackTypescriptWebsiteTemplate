@@ -130,16 +130,16 @@ function validateStaticPage(rootNode: FileNode, path: string): boolean {
     return false;
 }
 
+export const SITE_INDEX: FileNode = {};
+
 export default function StaticFiles(reactPathPrefix: string): Express.RequestHandler {
     const PAGES_DIR = path.resolve(__dirname, '../../public/static/js/', reactPathPrefix);
     const SHARED_PAGES_DIR = path.resolve(__dirname, '../../public/static/js/shared');
     if (!fs.existsSync(PAGES_DIR)) {
         throw new Error('React path prefix not found: ' + PAGES_DIR);
     }
-    const ROOT_PAGE_NODE: FileNode = {
-        ...indexStaticDir(PAGES_DIR),
-        ...indexStaticDir(SHARED_PAGES_DIR)
-    };
+    Object.assign(SITE_INDEX, indexStaticDir(PAGES_DIR));
+    Object.assign(SITE_INDEX, indexStaticDir(SHARED_PAGES_DIR));
     return (request: Request, response: Response, next: Function) => {
         try {
             if (request.method !== 'GET') {
@@ -178,7 +178,7 @@ export default function StaticFiles(reactPathPrefix: string): Express.RequestHan
                 }
             } else {
                 // If not in /static dir, check pages
-                if (!validateStaticPage(ROOT_PAGE_NODE, requestPath)) {
+                if (!validateStaticPage(SITE_INDEX, requestPath)) {
                     return next(); // This will resolve to a 404
                 }
                 response.setHeader(Constants.HEADERS.CONTENT_TYPE, Constants.CONTENT_TYPES.HTML);
