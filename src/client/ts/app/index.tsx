@@ -23,18 +23,23 @@ BrowserUtils.preventSpacebarScrolling();
 Toast.showStoredToasts();
 
 // Try to find the root element at all costs and render the app
-async () => {
+(async () => {
     try {
         let rootElement: HTMLElement | null;
         if (document.readyState === 'complete') {
             rootElement = document.getElementById(Constants.REACT_ROOT_ID);
         } else {
             rootElement = await new Promise<HTMLElement | null>((resolve) => {
-                const onLoad = () => {
-                    document.removeEventListener('load', onLoad);
-                    resolve(document.getElementById(Constants.REACT_ROOT_ID));
+                let interval: NodeJS.Timeout | undefined;
+                const onReadyStateChange = () => {
+                    if (document.readyState === 'complete') {
+                        document.removeEventListener('readystatechange', onReadyStateChange);
+                        clearInterval(interval);
+                        resolve(document.getElementById(Constants.REACT_ROOT_ID));
+                    }
                 };
-                document.addEventListener('load', onLoad);
+                document.addEventListener('readystatechange', onReadyStateChange);
+                interval = setInterval(onReadyStateChange, 100);
             });
         }
         if (!rootElement) {
@@ -49,4 +54,4 @@ async () => {
         errorElement.innerHTML = `<h1>Error!</h1><p class="text-danger">${errorMessage}</p>`;
         document.body.appendChild(errorElement);
     }
-};
+})();

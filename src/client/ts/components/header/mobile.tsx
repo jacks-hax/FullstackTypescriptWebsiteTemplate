@@ -7,7 +7,7 @@ import { subscribe, unsubscribe } from '@client/events/pub-sub';
 import { IHeader } from '@models/window';
 import INavNode from '@models/nav';
 
-function MobileHeader(props: IHeader): React.JSX.Element {
+export default function MobileHeader(props: IHeader): React.JSX.Element {
     /**
      * ----------------------------------------
      * -------------- STATE -------------------
@@ -239,4 +239,4 @@ function MobileHeader(props: IHeader): React.JSX.Element {
     );
 }
 
-export default React.forwardRef(MobileHeader);
+//export default React.forwardRef(MobileHeader);

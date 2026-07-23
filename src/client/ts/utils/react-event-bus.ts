@@ -16,8 +16,19 @@ export class ReactEvent extends Event {
 }
 export type ReactEventListener = (event: ReactEvent) => void;
 
+interface EventBusWindow extends Window {
+    reactEventBusListeners: Record<string, Set<ReactEventListener>>;
+}
+declare const window: EventBusWindow;
+
+if (!window.reactEventBusListeners) {
+    window.reactEventBusListeners = {};
+}
+
 export default class ReactEventBus {
-    private static listeners: Record<string, Set<ReactEventListener>> = {};
+    private static get listeners() {
+        return window.reactEventBusListeners;
+    }
 
     // Component Path => Component
     private static componentCache: Record<string, JSX.Element> = {};
@@ -32,6 +43,7 @@ export default class ReactEventBus {
         } else {
             ReactEventBus.listeners[eventType].add(listener);
         }
+        console.log('Added event listener for', eventType, listener);
         const cachedPaths = Object.keys(ReactEventBus.componentCache);
         if (cachedPaths.length) {
             listener(
@@ -52,7 +64,10 @@ export default class ReactEventBus {
     }
 
     public static publish(event: ReactEvent) {
+        console.log('publishing react event', event);
         if (!ReactEventBus.listeners[event.type]) {
+            console.log('No listeners...');
+            this.componentCache[event.detail.path] = event.detail.component;
             return;
         }
         Array.from(ReactEventBus.listeners[event.type]).forEach((listener) => {

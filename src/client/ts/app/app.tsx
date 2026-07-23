@@ -10,8 +10,11 @@ export default function App(): React.JSX.Element {
     const [bodyComponent, setBodyComponent] = React.useState<React.JSX.Element>();
     const currentPathRef = React.useRef<string>(window.location.pathname);
 
+    console.log('app rendering');
     React.useEffect(() => {
+        console.log('App loading!');
         const onComponentLoaded = (event: ReactEvent) => {
+            console.log('Component loaded', event);
             if (event.detail.path === currentPathRef.current) {
                 setBodyComponent(event.detail.component);
             }
