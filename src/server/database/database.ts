@@ -10,11 +10,13 @@ export class TransactionError extends Error {
     rollbackError?: mysql.QueryError;
 }
 
-export type TransactionFunction = () => Promise<any> | any;
+export type TransactionFunction = (transaction: DatabaseTransaction) => Promise<any> | any;
 
 export default class Database extends AsyncModule {
+    public static readonly CONNECTED_STATES: Set<mysql.ConnectionState> = new Set(['authenticated', 'connected']);
+    public static readonly DISCONNECTED_STATES: Set<mysql.ConnectionState> = new Set(['disconnected', 'error']);
+
     public static pool: mysql.Pool;
-    private static currentConnection: mysql.PoolConnection | null;
 
     static {
         Database.init();
@@ -42,16 +44,11 @@ export default class Database extends AsyncModule {
     }
 
     public static async getConnection(): Promise<mysql.PoolConnection> {
-        if (Database.currentConnection != null) {
-            return Database.currentConnection;
-        }
         return new Promise<mysql.PoolConnection>((resolve, reject) => {
-            console.log('getting connection...');
             Database.pool.getConnection((error: NodeJS.ErrnoException | null, connection: mysql.PoolConnection) => {
                 if (error) {
                     reject(error);
                 } else {
-                    console.log('got connection!');
                     resolve(connection);
                 }
             });
@@ -74,23 +71,12 @@ export default class Database extends AsyncModule {
                     return;
                 }
                 try {
-                    Database.currentConnection = connection;
-                    const result = await fn();
-                    Database.currentConnection = null;
-                    connection.commit((commitError) => {
-                        if (commitError) {
-                            const error = new TransactionError();
-                            error.commitError = commitError;
-                            connection.rollback((rollbackError) => {
-                                if (rollbackError) {
-                                    error.rollbackError = rollbackError;
-                                }
-                                reject(error);
-                            });
-                        } else {
-                            resolve(result);
-                        }
-                    });
+                    const transaction = new DatabaseTransaction(connection);
+                    const result = await fn(transaction);
+                    transaction
+                        .commit()
+                        .then(() => resolve(result))
+                        .catch(reject);
                 } catch (exception) {
                     console.error(exception);
                     const error = new TransactionError();
@@ -116,8 +102,15 @@ export default class Database extends AsyncModule {
      * @param query SQL query string
      * @returns Promise that resolves to an array of records resulting from query
      */
-    public static async query(query: string, variables: any[] = []): Promise<Array<Record<string, any>>> {
-        const connection: mysql.PoolConnection = await Database.getConnection();
+    public static async query(
+        query: string,
+        variables: any[] = [],
+        connection?: mysql.PoolConnection
+    ): Promise<Array<Record<string, any>>> {
+        const isSingular = !connection;
+        if (!connection) {
+            connection = await Database.getConnection();
+        }
         return new Promise<Array<Record<string, any>>>((resolve, reject) => {
             const formattedQuery = connection.format(query, variables);
             console.log('Formatted Query:', formattedQuery);
@@ -128,13 +121,13 @@ export default class Database extends AsyncModule {
                     result: Array<mysql.RowDataPacket>,
                     _: Array<mysql.FieldPacket>
                 ) => {
+                    if (isSingular) {
+                        connection.destroy();
+                    }
                     if (queryError) {
                         reject(new DatabaseError(queryError));
                     } else {
                         resolve(result);
-                    }
-                    if (connection != Database.currentConnection) {
-                        connection.destroy();
                     }
                 }
             );
@@ -146,12 +139,15 @@ export default class Database extends AsyncModule {
      * @param record Record to insert
      * @returns New Record ID
      */
-    public static async insert(record: BaseModel): Promise<string> {
-        const connection: mysql.PoolConnection = await Database.getConnection();
+    public static async insert(record: BaseModel, connection?: mysql.PoolConnection): Promise<string> {
         if (record.Id) {
             throw new Error(`Record already has ID: ${record.Id}`);
         }
-        return new Promise<string>(async (resolve, reject) => {
+        const isSingular = !connection;
+        if (!connection) {
+            connection = await Database.getConnection();
+        }
+        return new Promise<string>((resolve, reject) => {
             const recordId = record.generateId();
             const table = record.constructor.name;
             const recordClone = record.createQuerySafeClone() as unknown as Record<string, unknown>;
@@ -160,69 +156,129 @@ export default class Database extends AsyncModule {
             connection.query(
                 query,
                 (insertError: mysql.QueryError | null, _: mysql.QueryResult, __: Array<mysql.FieldPacket>) => {
+                    if (isSingular) {
+                        connection.destroy();
+                    }
                     if (insertError) {
                         reject(new DatabaseError(insertError));
                     } else {
                         resolve(recordId);
                     }
-                    if (connection != Database.currentConnection) {
-                        connection.destroy();
-                    }
                 }
             );
         });
     }
 
-    public static async update(record: BaseModel): Promise<mysql.OkPacket> {
+    public static async update(record: BaseModel, connection?: mysql.PoolConnection): Promise<mysql.ResultSetHeader> {
         if (!record?.Id) {
             throw new DatabaseError(Constants.ERROR_MESSAGES.CANNOT_UPDATE_RECORD_WITHOUT_ID);
+        }
+        const isSingular = !connection;
+        if (!connection) {
+            connection = await Database.getConnection();
         }
         const table = record.constructor.name;
         const recordClone = record.createQuerySafeClone() as unknown as Record<string, unknown>;
         const query = mysql.format('UPDATE ?? SET ? WHERE Id = ?', [table, recordClone, record.Id]);
         console.log('Update query:', query);
-        const connection: mysql.PoolConnection = await Database.getConnection();
-        return new Promise<mysql.OkPacket>((resolve, reject) => {
+        return new Promise<mysql.ResultSetHeader>((resolve, reject) => {
             connection.query(
                 query,
-                (updateError: mysql.QueryError | null, result: mysql.OkPacket, _: Array<mysql.FieldPacket>) => {
+                (updateError: mysql.QueryError | null, result: mysql.ResultSetHeader, _: Array<mysql.FieldPacket>) => {
+                    if (isSingular) {
+                        connection.destroy();
+                    }
                     if (updateError) {
                         reject(new DatabaseError(updateError));
                     } else {
                         resolve(result);
-                    }
-                    if (connection != Database.currentConnection) {
-                        connection.destroy();
                     }
                 }
             );
         });
     }
 
-    public static async delete(record: BaseModel | string): Promise<mysql.OkPacket> {
+    public static async delete(
+        record: BaseModel | string,
+        connection?: mysql.PoolConnection
+    ): Promise<mysql.ResultSetHeader> {
         const recordId = record instanceof BaseModel ? record.Id : record;
         if (!recordId?.length) {
             throw new DatabaseError(Constants.ERROR_MESSAGES.CANNOT_DELETE_RECORD_WITHOUT_ID);
+        }
+        const isSingular = !connection;
+        if (!connection) {
+            connection = await Database.getConnection();
         }
         const table = record.constructor.name;
         const id = recordId;
         const query = mysql.format('DELETE FROM ?? WHERE Id = ?;', [table, id]);
         console.log('Delete query:', query);
-        const connection: mysql.PoolConnection = await Database.getConnection();
-        return new Promise<mysql.OkPacket>((resolve, reject) => {
+        return new Promise<mysql.ResultSetHeader>((resolve, reject) => {
             connection.query(
                 query,
-                (deleteError: mysql.QueryError | null, result: mysql.OkPacket, _: Array<mysql.FieldPacket>) => {
+                (deleteError: mysql.QueryError | null, result: mysql.ResultSetHeader, _: Array<mysql.FieldPacket>) => {
+                    if (isSingular) {
+                        connection.destroy();
+                    }
                     if (deleteError) {
                         reject(new DatabaseError(deleteError));
                     } else {
                         resolve(result);
                     }
-                    if (connection != Database.currentConnection) {
-                        connection.destroy();
-                    }
                 }
             );
         });
+    }
+}
+
+export class DatabaseTransaction {
+    private connection: mysql.PoolConnection;
+    private isOpen: boolean = true;
+    constructor(connection: mysql.PoolConnection) {
+        this.connection = connection;
+    }
+    public query(query: string, variables: Array<string> = []): Promise<Array<Record<string, any>>> {
+        this.checkState();
+        return Database.query(query, variables, this.connection);
+    }
+
+    public insert(record: BaseModel): Promise<string> {
+        this.checkState();
+        return Database.insert(record, this.connection);
+    }
+    public update(record: BaseModel): Promise<mysql.ResultSetHeader> {
+        this.checkState();
+        return Database.update(record, this.connection);
+    }
+    public delete(record: BaseModel | string): Promise<mysql.ResultSetHeader> {
+        this.checkState();
+        return Database.delete(record, this.connection);
+    }
+    public commit(): Promise<void> {
+        this.checkState();
+        return new Promise<void>((resolve, reject) => {
+            this.connection.commit((commitError) => {
+                if (commitError) {
+                    const error = new TransactionError();
+                    error.commitError = commitError;
+                    this.connection.rollback((rollbackError) => {
+                        if (rollbackError) {
+                            error.rollbackError = rollbackError;
+                        }
+                        reject(error);
+                    });
+                } else {
+                    resolve();
+                }
+                this.connection.destroy();
+                this.isOpen = false;
+            });
+        });
+    }
+    private checkState() {
+        if (!this.isOpen) {
+            throw new TransactionError('Transaction is closed.');
+        }
     }
 }

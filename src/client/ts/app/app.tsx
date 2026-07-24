@@ -14,8 +14,8 @@ export default function App(): React.JSX.Element {
     React.useEffect(() => {
         console.log('App loading!');
         const onComponentLoaded = (event: ReactEvent) => {
-            console.log('Component loaded', event);
-            if (event.detail.path === currentPathRef.current) {
+            console.log('Component loaded into app', event, currentPathRef.current);
+            if (event.detail.path === currentPathRef.current || !bodyComponent) {
                 setBodyComponent(event.detail.component);
             }
         };

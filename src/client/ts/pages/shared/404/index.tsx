@@ -4,7 +4,7 @@ import * as React from 'react';
 // Utils
 import ReactEventBus from '@client/utils/react-event-bus';
 
-async () => {
+(async () => {
     try {
         const cmp = (
             <>
@@ -18,4 +18,4 @@ async () => {
     } catch (error) {
         console.error(error);
     }
-};
+})();

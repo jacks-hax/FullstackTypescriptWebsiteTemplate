@@ -10,6 +10,7 @@ import BodyParserMiddleware from '@middleware/body-parser';
 import SessionMiddleware from '@middleware/session';
 import AdminStaticPages from '@server/admin/static';
 import AppData from '@middleware/app-data';
+import Compression from 'compression';
 import API from '@server/admin/api';
 
 const port = process.env.SERVER_PORT;
@@ -22,6 +23,7 @@ const app = Express();
 app.disable('x-powered-by');
 //app.use(CSPLoader);
 //app.use(Helmet);
+app.use(Compression());
 app.use(SessionMiddleware);
 app.use(BodyParserMiddleware);
 app.use('/api', API);

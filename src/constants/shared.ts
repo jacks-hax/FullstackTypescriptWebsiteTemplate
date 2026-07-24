@@ -20,6 +20,9 @@ export default class Constants {
         CSS: 'text/css',
         HTML: 'text/html',
         TXT: 'text/plain',
+        PNG: 'image/png',
+        SVG: 'image/svg+xml',
+        ICO: 'image/x-icon',
         FORM_URLENCODED: 'application/x-www-form-urlencoded',
         FORM_MULTIPART: 'multipart/form-data',
         OCTET_STREAM: 'application/octet-stream'

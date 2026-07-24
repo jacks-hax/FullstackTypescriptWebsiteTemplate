@@ -44,7 +44,7 @@ export default function Header(props: IHeader): React.JSX.Element {
 
     React.useEffect(() => {
         checkForMobileWindow();
-        setLogoHref('/favicon.ico');
+        setLogoHref('/static/images/logo.png');
         window.addEventListener('resize', checkForMobileWindow);
         return () => {
             window.removeEventListener('resize', checkForMobileWindow);

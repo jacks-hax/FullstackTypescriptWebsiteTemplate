@@ -14,6 +14,7 @@ interface FileNode {
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PUBLIC_DIR = path.resolve(__dirname, '../../public');
+const CACHEABLE_FILE_TYPES = new Set<string>(['js', 'css', 'html']);
 
 const TEMPLATE_DATA_GLOBAL: Record<string, string> = {
     application_name: "Jack's Hacks",
@@ -31,6 +32,13 @@ let staticCacheEnabled = false;
 
 function countStaticFilesSize(): number {
     return Object.values(STATIC_CACHE).reduce((sum, file) => sum + file.length, 0);
+}
+
+function isCacheable(filePath: string): boolean {
+    if (!CACHEABLE_FILE_TYPES.has(filePath.match(/.*\.([a-z]+)$/)?.[1] ?? '')) {
+        return false;
+    }
+    return fs.statSync(filePath).size < STATIC_CACHE_MAX_HEAP / 2;
 }
 
 function cacheStaticFile(filePath: string, fileBuffer: Buffer) {
@@ -70,7 +78,7 @@ function cacheStaticFilesRecursive(filePath: string, size: number = 0): number {
             (subFile) => (addedBytes += cacheStaticFilesRecursive(path.resolve(filePath, subFile), size))
         );
         return addedBytes;
-    } else {
+    } else if (isCacheable(filePath)) {
         const relativePath = filePath.replace(PUBLIC_DIR, '');
         const fileBuffer = fs.readFileSync(filePath);
         if (fileBuffer.length + size > STATIC_CACHE_MAX_HEAP) {
@@ -79,6 +87,7 @@ function cacheStaticFilesRecursive(filePath: string, size: number = 0): number {
         STATIC_CACHE[relativePath] = fileBuffer;
         return fileBuffer.length;
     }
+    return 0;
 }
 if (staticCacheEnabled) {
     cacheStaticFilesRecursive(STATIC_DIR);
@@ -150,10 +159,12 @@ export default function StaticFiles(reactPathPrefix: string): Express.RequestHan
             let requestPath = request.path;
             if (response.page) {
                 requestPath = '/' + response.page;
-            } else {
-                while (requestPath.includes('//')) {
-                    requestPath = requestPath.replaceAll('//', '/').replaceAll('..', '');
-                }
+            }
+            while (requestPath.includes('//')) {
+                requestPath = requestPath.replaceAll('//', '/');
+            }
+            while (requestPath.includes('..')) {
+                requestPath = requestPath.replaceAll('..', '');
             }
 
             console.log('static file requested:', requestPath);
@@ -168,9 +179,28 @@ export default function StaticFiles(reactPathPrefix: string): Express.RequestHan
                 } else {
                     const staticPath = path.join(PUBLIC_DIR, requestPath);
                     if (fs.existsSync(staticPath) && fs.statSync(staticPath).isFile()) {
-                        const staticFileBuffer = fs.readFileSync(staticPath);
-                        response.status(200).send(staticFileBuffer);
-                        cacheStaticFile(requestPath, staticFileBuffer);
+                        const buffer = fs.readFileSync(staticPath);
+                        response.status(200).send(buffer);
+                        //response.status(200).sendFile(
+                        //    requestPath,
+                        //    {
+                        //        root: PUBLIC_DIR,
+                        //        lastModified: true,
+                        //        cacheControl: true,
+                        //        maxAge: 3600000,
+                        //        headers: {
+                        //            connection: 'close'
+                        //        }
+                        //    },
+                        //    (error) => {
+                        //        if (error) {
+                        //            next();
+                        //        }
+                        //    }
+                        //);
+                        if (isCacheable(staticPath)) {
+                            cacheStaticFile(staticPath, buffer);
+                        }
                         return;
                     } else {
                         return next();

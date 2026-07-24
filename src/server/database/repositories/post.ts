@@ -47,12 +47,7 @@ export default class PostRepository {
 
         try {
             // Insert the user record and return the record with it's new id
-            return await Database.wrap(async () => {
-                console.log('Post before', post);
-                await Database.insert(post);
-                console.log('Post after', post);
-                return post;
-            });
+            return await Database.insert(post);
         } catch (error) {
             if (error instanceof DatabaseError) {
                 // Override default MySQL error messages with more user-friendly custom error messages

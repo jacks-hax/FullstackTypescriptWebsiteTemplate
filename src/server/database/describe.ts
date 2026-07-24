@@ -19,11 +19,12 @@ export default class GlobalDescribe extends AsyncModule {
             await this.signalInit();
             const result = await Database.query('SHOW TABLES;');
             const promises: Array<Promise<void>> = [];
-            Database.wrap(async () => {
+            Database.wrap(async (txn) => {
                 result.forEach((tableObject) => {
                     const tableName = tableObject[`Tables_in_${process.env.MYSQL_DATABASE}`];
                     promises.push(
-                        Database.query('DESCRIBE ??;', [tableName])
+                        txn
+                            .query('DESCRIBE ??;', [tableName])
                             .then((fieldDescribes) => {
                                 GlobalDescribe.cache[tableName] = new TableDescribe(
                                     tableName,

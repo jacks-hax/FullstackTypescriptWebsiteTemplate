@@ -77,9 +77,9 @@ export default class UserRepository {
 
         try {
             // Insert the user record and return the record with it's new id
-            return await Database.wrap(async () => {
+            return await Database.wrap(async (txn) => {
                 console.log('User before', user);
-                const userId = await Database.insert(user);
+                const userId = await txn.insert(user);
                 console.log('User after', user);
                 const hashedPassword = await Crypto.hashPassword(password);
                 const userCredential = UserCredential.from({
@@ -89,7 +89,7 @@ export default class UserRepository {
                     ExpirationDate: new Date(Date.now() + ServerConstants.PASSWORD_TTL),
                     IsActive: true
                 });
-                const r = await Database.insert(userCredential);
+                const r = await txn.insert(userCredential);
                 console.log('cred res:', r);
                 return user;
             });

@@ -80,6 +80,7 @@ export default class ReactEventBus {
     }
 
     public static componentLoaded(path: string, component: JSX.Element) {
+        console.log('Component loaded:', path, component);
         ReactEventBus.publish(
             new ReactEvent(ReactEventBus.SYSTEM_EVENTS.CMP_LOADED, {
                 detail: {
