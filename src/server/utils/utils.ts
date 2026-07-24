@@ -7,6 +7,7 @@ import { Response } from 'express';
 import { ISiteIndex } from '@models/window';
 
 export default class Utils {
+    private static siteIndex: ISiteIndex = {};
     /**
      * @description Get the base url to access the gateway to this server
      * @returns {string} Server base url
@@ -22,8 +23,11 @@ export default class Utils {
     }
 
     public static getSiteIndex(): ISiteIndex {
-        const siteIndex: ISiteIndex = {};
-        return siteIndex;
+        if (!!Object.keys(Utils.siteIndex)) {
+            return Utils.siteIndex;
+        }
+
+        return Utils.siteIndex;
     }
 
     /**
