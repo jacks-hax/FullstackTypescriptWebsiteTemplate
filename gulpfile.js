@@ -2,7 +2,6 @@
  * @description Gulpfile for compiling SCSS to minified CSS, compiling TS to minified JS, and copying images and dependencies to the build/ directory
  */
 import CLIReader, { CLIValueConfig } from './bin/utils/cli-reader.ts';
-
 import beautifyCode from 'gulp-beautify-code';
 import autoprefixer from 'gulp-autoprefixer';
 import environments from 'gulp-environments';
@@ -71,8 +70,8 @@ const SRC_DIR_SERVER = path.resolve(SRC_DIR, 'server');
 
 // Define output directories
 const OUT_DIR = path.resolve(__dirname, 'dist');
-const OUT_DIR_CLIENT = path.resolve(OUT_DIR, 'public');
-const OUT_DIR_CLIENT_STATIC = path.resolve(OUT_DIR_CLIENT, 'static');
+const OUT_DIR_CLIENT = path.resolve(OUT_DIR, 'client');
+const OUT_DIR_CLIENT_STATIC = path.resolve(OUT_DIR_CLIENT, 'assets');
 const OUT_DIR_SERVER = OUT_DIR;
 
 const SECRETS_DIR = path.resolve(OUT_DIR, '.private');
@@ -121,24 +120,9 @@ async function awaitStream(stream, callback) {
     });
 }
 
-/**
- * @description Generates an MD5 hash of a file or folder. This is used to get a unique version identifier of each code revision
- * @param {string} fileOrFolderPath Path of file or folder to hash the contents of
- * @returns {string} MD5 has of the contents of the file/folder
- */
-function hashFileOrFolder(fileOrFolderPath) {
-    const hash = crypto.createHash('md5');
-    const addFilePath = (currentFilePath) => {
-        if (fs.statSync(currentFilePath).isFile()) {
-            hash.update(fs.readFileSync(currentFilePath));
-            return;
-        }
-        fs.readdirSync(currentFilePath)
-            .sort()
-            .forEach((file) => addFilePath(path.join(currentFilePath, file)));
-    };
-    addFilePath(fileOrFolderPath);
-    return hash.digest('hex');
+// TODO : implement versioning in .env file: M.m.p-b increment build version each time this runs unless in production
+function getNextVersionNumber() {
+    return crypto.randomUUID().toString();
 }
 
 /**
@@ -149,13 +133,6 @@ function hashFileOrFolder(fileOrFolderPath) {
 
 class Client {
     static get tasks() {
-        //const compilationTasks = [];
-        //if (ARGS.GATEWAY === 'admin' || ARGS.GATEWAY === 'all') {
-        //    compilationTasks.push(Client.compileAdminTs);
-        //}
-        //if (ARGS.GATEWAY === 'public' || ARGS.GATEWAY === 'all') {
-        //    compilationTasks.push(Client.compilePublicTs);
-        //}
         const tasks = [
             Client.initialClean,
             Client.copyImages,
@@ -163,7 +140,6 @@ class Client {
             Client.copyDependencies,
             Client.compileSass,
             Client.minifyCss,
-            //...compilationTasks,
             Client.compileTs,
             Client.minifyJs,
             Client.cleanArtifacts
@@ -180,22 +156,20 @@ class Client {
     /** @return {typescript.Project} */
     static getTsProject() {
         const tsconfig = JSON.parse(fs.readFileSync('tsconfig.json').toString());
-        tsconfig.include = ['./src/client/ts/pages/shared/'];
         if (ARGS.GATEWAY === 'all') {
-            fs.readdirSync(path.resolve(SRC_DIR_CLIENT, 'ts/pages')).forEach((gateway) =>
-                tsconfig.include.push(`./src/client/ts/pages/${gateway}/`)
-            );
+            tsconfig.include.push(`./src/client/ts/pages/`);
         } else {
+            tsconfig.include = ['./src/client/ts/pages/shared/'];
             tsconfig.include.push(`./src/client/ts/pages/${ARGS.GATEWAY}`);
         }
-        tsconfig.exclude.push('./src/server/**/*');
+        tsconfig.exclude.push('./src/server/');
         tsconfig.compilerOptions.target = 'ES6';
         tsconfig.compilerOptions.lib = ['ES6', 'DOM'];
         tsconfig.compilerOptions.moduleResolution = 'bundler';
         const tsconfigFile = path.resolve('tsconfig.client.json');
         fs.writeFileSync(tsconfigFile, JSON.stringify(tsconfig));
         const tsproject = typescript.createProject(tsconfigFile);
-        fs.rmSync(tsconfigFile);
+        //fs.rmSync(tsconfigFile);
         return tsproject;
     }
 
@@ -287,8 +261,8 @@ class Client {
     static minifyCss() {
         return gulp
             .src([
-                path.resolve(OUT_DIR_CLIENT_STATIC, 'css/*.css'),
-                `!${path.resolve(OUT_DIR_CLIENT_STATIC, 'css/*.min.css')}`
+                path.resolve(OUT_DIR_CLIENT_STATIC, 'css/**/*.css'),
+                `!${path.resolve(OUT_DIR_CLIENT_STATIC, 'css/**/*.min.css')}`
             ])
             .pipe(sourcemaps.init())
             .pipe(
@@ -337,10 +311,10 @@ class Client {
         return gulp
             .src(
                 [
-                    path.resolve(OUT_DIR_CLIENT_STATIC, './**/*.js'),
-                    path.resolve(OUT_DIR_CLIENT_STATIC, './**/*.css'),
-                    `!${path.resolve(OUT_DIR_CLIENT_STATIC, './**/*.min.js')}`,
-                    `!${path.resolve(OUT_DIR_CLIENT_STATIC, './**/*.min.css')}`
+                    path.resolve(OUT_DIR_CLIENT_STATIC, 'js/**/*.js'),
+                    path.resolve(OUT_DIR_CLIENT_STATIC, 'css/**/*.css'),
+                    `!${path.resolve(OUT_DIR_CLIENT_STATIC, 'js/**/*.min.js')}`,
+                    `!${path.resolve(OUT_DIR_CLIENT_STATIC, 'css/**/*.min.css')}`
                 ],
                 { allowEmpty: true }
             )
@@ -405,13 +379,10 @@ class Server {
             .filter((dir) => !GATEWAYS.includes(dir))
             .forEach((dir) => tsconfig.include.push(`./src/server/${dir}`));
         if (ARGS.GATEWAY === 'all') {
-            fs.readdirSync(path.resolve(SRC_DIR_CLIENT, 'ts/pages')).forEach((gateway) =>
-                tsconfig.include.push(`./src/server/${gateway}`)
-            );
+            GATEWAYS.forEach((gateway) => tsconfig.include.push(`./src/server/${gateway}`));
         } else {
             tsconfig.include.push(`./src/server/${ARGS.GATEWAY}`);
         }
-        console.log('includes:', tsconfig.include);
         //tsconfig.includes = [`./src/server/${srcPath}`];
         tsconfig.exclude.push('./src/client/**/*');
         tsconfig.compilerOptions.lib = ['ES2020'];
@@ -548,14 +519,6 @@ class Server {
                 if (fs.existsSync(fullPathTmp)) {
                     localPath = localPathTmp;
                 } else {
-                    console.log(
-                        'unable to locate local js path for ',
-                        fullPathTmp,
-                        'in',
-                        fileAbsolutePath,
-                        'with relative',
-                        localPath
-                    );
                     localPathTmp = localPath + '/index.js';
                     fullPathTmp = path.resolve(path.dirname(fileAbsolutePath), localPathTmp);
                     if (fs.existsSync(fullPathTmp)) {
