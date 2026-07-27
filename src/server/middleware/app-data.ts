@@ -1,6 +1,5 @@
 import ModuleEventBus, { ModuleEvent } from '@utils/events/module-event-bus';
 import MenuRepository from '@database/repositories/menu';
-import { SITE_INDEX } from '@middleware/static-files';
 import { Request, Response } from 'express';
 import { IAppData } from '@models/window';
 import { randomUUID } from 'node:crypto';
@@ -19,7 +18,7 @@ const BASE_APP_DATA: IAppData = {
     },
     serverInfo: {
         baseUrl: Utils.getServerBaseUrl(),
-        siteIndex: SITE_INDEX
+        siteIndex: {}
     }
 };
 

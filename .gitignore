@@ -8,6 +8,8 @@ package-lock.json
 
 # Local Development Environment Configuration
 .env.*json
+tsconfig.client.json
+tsconfig.server.json
 
 # Snyk cache
 .dccache

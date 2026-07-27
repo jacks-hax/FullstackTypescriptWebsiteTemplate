@@ -29,14 +29,13 @@ const entryMap = {
  * @param {string} fileName File path, relative to the SRC_DIR
  */
 function applyToEntries(rootDir, fileName) {
-    console.log('Applying to entries:', rootDir, fileName);
     const absoluteFilePath = path.resolve(rootDir, fileName);
     if (fs.lstatSync(absoluteFilePath).isDirectory()) {
         fs.readdirSync(absoluteFilePath).forEach((subFileName) =>
             applyToEntries(rootDir, path.join(fileName, subFileName))
         );
-    } else if (fileName.match(/index\.(ts|tsx)$/)) {
-        const entry = path.basename(rootDir) + '/' + fileName.replace(/\.[^/.]+$/, '');
+    } else if (fileName.match(/index.tsx$/)) {
+        const entry = path.join('pages', fileName.replace(/\.[^/.]+$/, ''));
         if (entry?.length) {
             entryMap[entry] = absoluteFilePath;
         }
@@ -50,7 +49,7 @@ for (const gateway of GATEWAYS) {
 const srcDir = path.resolve(PAGES_DIR, 'shared');
 fs.readdirSync(srcDir).forEach((fileName) => applyToEntries(srcDir, fileName));
 
-console.log(entryMap);
+console.log('ENTRY MAP:', entryMap);
 
 export default {
     mode: process.env.NODE_ENV || 'development',

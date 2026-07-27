@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import Constants from '@constants/shared';
 import JsonApiResponse from '@models/jsonapi';
-import { renderHtml } from '@middleware/static-files';
 
 export function handle404(request: Request, response: Response) {
     request.session.destroy((error) => {
@@ -18,7 +17,7 @@ export function handle404(request: Request, response: Response) {
             });
             response.status(404).json(jsonapiResponse);
         } else {
-            response.status(404).send(renderHtml('shared', '404', response.appData!));
+            response.status(404).send('<h1>404</h1>');
         }
     });
 }

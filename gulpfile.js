@@ -13,6 +13,7 @@ import replace from 'gulp-replace';
 import gulpSass from 'gulp-sass';
 import uglify from 'gulp-uglify';
 import rename from 'gulp-rename';
+import merge from 'merge-stream';
 import clean from 'gulp-clean';
 import * as sass from 'sass';
 import crypto from 'crypto';
@@ -26,7 +27,7 @@ const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PAGES_DIR = path.resolve(__dirname, 'src/client/ts/pages');
-const GATEWAYS = fs.readdirSync(PAGES_DIR).filter((opt) => opt !== 'shared');
+const GATEWAY_OPTIONS = fs.readdirSync(PAGES_DIR).filter((opt) => opt !== 'shared');
 
 /**
  * @typedef {Object} GulpArgs
@@ -52,7 +53,7 @@ const ARGS = CLIReader.parseArgv([
         label: 'Gateway',
         type: 'enum',
         flags: new Set(['--gateway', '-g']),
-        enumValues: new Set(['all', ...GATEWAYS]),
+        enumValues: new Set(['all', ...GATEWAY_OPTIONS]),
         defaultValue: 'all'
     }),
     new CLIValueConfig({
@@ -63,6 +64,8 @@ const ARGS = CLIReader.parseArgv([
     })
 ]);
 
+const SELECTED_GATEWAYS = ARGS.GATEWAY === 'all' ? GATEWAY_OPTIONS : [ARGS.GATEWAY];
+
 // Define source directories
 const SRC_DIR = path.resolve(__dirname, 'src');
 const SRC_DIR_CLIENT = path.resolve(SRC_DIR, 'client');
@@ -71,15 +74,11 @@ const SRC_DIR_SERVER = path.resolve(SRC_DIR, 'server');
 // Define output directories
 const OUT_DIR = path.resolve(__dirname, 'dist');
 const OUT_DIR_CLIENT = path.resolve(OUT_DIR, 'client');
-const OUT_DIR_CLIENT_STATIC = path.resolve(OUT_DIR_CLIENT, 'assets');
-const OUT_DIR_SERVER = OUT_DIR;
-
-const SECRETS_DIR = path.resolve(OUT_DIR, '.private');
+const OUT_DIR_SERVER = path.resolve(OUT_DIR, 'server');
 
 // Leaving these hardcoded since the paths of these files is arbitrary
-const JWT_KEYS_DIR = path.resolve(SECRETS_DIR, 'jwt');
-const JWT_PRIVATE_KEY_FILE = path.resolve(JWT_KEYS_DIR, 'private-key.pem');
-const JWT_PUBLIC_KEY_FILE = path.resolve(JWT_KEYS_DIR, 'public-key.pem');
+const JWT_PRIVATE_KEY_FILENAME = 'private-key.pem';
+const JWT_PUBLIC_KEY_FILENAME = 'public-key.pem';
 
 if (!fs.existsSync(OUT_DIR)) {
     fs.mkdirSync(OUT_DIR);
@@ -131,37 +130,68 @@ function getNextVersionNumber() {
  * ----------------------------------------------
  */
 
-class Client {
-    static get tasks() {
+class StackBuilder {
+    gateway = 'public';
+    rootSrcDir;
+    rootOutDir;
+    constructor(gateway) {
+        this.gateway = gateway;
+    }
+
+    get srcDir() {
+        if (!this.rootSrcDir) {
+            throw new Error(`Root src dir not defined for ${this.constructor.name} ${this.gateway} stack builder`);
+        }
+        return path.resolve(this.rootSrcDir, this.gateway);
+    }
+
+    get outDir() {
+        if (!this.rootOutDir) {
+            throw new Error(`Root out dir not defined for ${this.constructor.name} ${this.gateway} stack builder`);
+        }
+        return path.resolve(this.rootOutDir, this.gateway);
+    }
+
+    get tasks() {
+        // Implement in child class
+        return [];
+    }
+}
+
+class ClientBuilder extends StackBuilder {
+    rootSrcDir = path.resolve(SRC_DIR_CLIENT, 'ts/pages');
+    rootOutDir = OUT_DIR_CLIENT;
+
+    get outDirAssets() {
+        return path.resolve(this.outDir, 'assets');
+    }
+
+    get tasks() {
         const tasks = [
-            Client.initialClean,
-            Client.copyImages,
-            Client.copyTemplates,
-            Client.copyDependencies,
-            Client.compileSass,
-            Client.minifyCss,
-            Client.compileTs,
-            Client.minifyJs,
-            Client.cleanArtifacts
+            this.initialClean,
+            this.copyImages,
+            this.copyTemplates,
+            this.copyDependencies,
+            this.compileSass,
+            this.minifyCss,
+            this.compileTs,
+            this.minifyJs,
+            this.cleanArtifacts
         ];
         if (environments.production()) {
-            tasks.push(Client.cleanNonMinifiedCode);
+            tasks.push(this.cleanNonMinifiedCode);
         }
         if (ARGS.WATCH) {
-            tasks.push(Client.watch);
+            tasks.push(this.watch);
         }
-        return tasks;
+        return tasks.map((task) => task.bind(this));
     }
 
     /** @return {typescript.Project} */
-    static getTsProject() {
+    getTsProject() {
         const tsconfig = JSON.parse(fs.readFileSync('tsconfig.json').toString());
-        if (ARGS.GATEWAY === 'all') {
-            tsconfig.include.push(`./src/client/ts/pages/`);
-        } else {
-            tsconfig.include = ['./src/client/ts/pages/shared/'];
-            tsconfig.include.push(`./src/client/ts/pages/${ARGS.GATEWAY}`);
-        }
+        tsconfig.include = ['./src/client/ts/pages/shared/'];
+        tsconfig.include.push(`./src/client/ts/pages/${this.gateway}`);
         tsconfig.exclude.push('./src/server/');
         tsconfig.compilerOptions.target = 'ES6';
         tsconfig.compilerOptions.lib = ['ES6', 'DOM'];
@@ -173,48 +203,48 @@ class Client {
         return tsproject;
     }
 
-    static initialClean() {
-        return gulp.src(OUT_DIR_CLIENT, { read: false, allowEmpty: true }).pipe(clean());
+    initialClean() {
+        return gulp.src(this.outDir, { read: false, allowEmpty: true }).pipe(clean());
     }
 
     /**
      * @description Copies all images from the source directory to the output directory
      * @returns {NodeJS.ReadWriteStream}
      */
-    static copyImages() {
+    copyImages() {
         return gulp
             .src([path.resolve(SRC_DIR_CLIENT, 'images/**/*'), `!${path.resolve(SRC_DIR_CLIENT, 'images/*.d.ts')}`])
-            .pipe(gulp.dest(path.resolve(OUT_DIR_CLIENT_STATIC, 'images')));
+            .pipe(gulp.dest(path.resolve(this.outDirAssets, 'images')));
     }
 
     /**
      * @description Copies all images from the source directory to the output directory
      * @returns {NodeJS.ReadWriteStream}
      */
-    static copyTemplates() {
+    copyTemplates() {
         return gulp
             .src([
                 path.resolve(SRC_DIR_CLIENT, 'templates/**/*'),
                 `!${path.resolve(SRC_DIR_CLIENT, 'templates/*.d.ts')}`
             ])
-            .pipe(gulp.dest(OUT_DIR_CLIENT));
+            .pipe(gulp.dest(this.outDir));
     }
 
     /**
      * @description Copies all dependencies from the source directory to the output directory
      * @returns {NodeJS.ReadWriteStream}
      */
-    static copyDependencies() {
+    copyDependencies() {
         return gulp
             .src([path.resolve(SRC_DIR_CLIENT, 'deps/**/*'), `!${path.resolve(SRC_DIR_CLIENT, 'deps/*.d.ts')}`])
-            .pipe(gulp.dest(path.resolve(OUT_DIR_CLIENT_STATIC, 'deps')));
+            .pipe(gulp.dest(path.resolve(this.outDirAssets, 'deps')));
     }
 
     /**
      * @description Compiles all SCSS files to CSS
      * @returns {NodeJS.ReadWriteStream}
      */
-    static compileSass() {
+    compileSass() {
         return gulp
             .src(path.resolve(SRC_DIR_CLIENT, 'scss/*.scss'))
             .pipe(gulpSass(sass)())
@@ -225,7 +255,7 @@ class Client {
                 })
             )
             .pipe(beautifyCode(BEAUTIFY_CONFIG))
-            .pipe(gulp.dest(path.resolve(OUT_DIR_CLIENT_STATIC, 'css')));
+            .pipe(gulp.dest(path.resolve(this.outDirAssets, 'css')));
     }
 
     /**
@@ -235,16 +265,16 @@ class Client {
      * @param {function} callback - Callback function to execute after compilation
      * @returns {Promise<void>}
      */
-    static async compileTs(callback) {
-        process.env.GATEWAY = ARGS.GATEWAY;
+    async compileTs(callback) {
+        process.env.GATEWAY = this.gateway;
         const webpackConfig = await import(`./webpack.config.js?${cacheBuster++}`);
-        const tsproject = Client.getTsProject();
+        const tsproject = this.getTsProject();
         const stream = tsproject
             .src()
             .pipe(tsproject())
             .js.pipe(webpack(webpackConfig.default))
             .pipe(beautifyCode(BEAUTIFY_CONFIG))
-            .pipe(gulp.dest(path.resolve(OUT_DIR_CLIENT_STATIC, 'js')));
+            .pipe(gulp.dest(path.resolve(this.outDirAssets, 'js')));
         return awaitStream(stream, callback);
     }
 
@@ -258,11 +288,11 @@ class Client {
      * @description Minifies all CSS files
      * @returns {NodeJS.ReadWriteStream}
      */
-    static minifyCss() {
+    minifyCss() {
         return gulp
             .src([
-                path.resolve(OUT_DIR_CLIENT_STATIC, 'css/**/*.css'),
-                `!${path.resolve(OUT_DIR_CLIENT_STATIC, 'css/**/*.min.css')}`
+                path.resolve(this.outDirAssets, 'css/**/*.css'),
+                `!${path.resolve(this.outDirAssets, 'css/**/*.min.css')}`
             ])
             .pipe(sourcemaps.init())
             .pipe(
@@ -278,19 +308,19 @@ class Client {
                 })
             )
             .pipe(sourcemaps.write('maps'))
-            .pipe(gulp.dest(path.resolve(OUT_DIR_CLIENT_STATIC, 'css')));
+            .pipe(gulp.dest(path.resolve(this.outDirAssets, 'css')));
     }
 
     /**
      * @description Minifies all JS files
      * @returns {NodeJS.ReadWriteStream}
      */
-    static minifyJs() {
+    minifyJs() {
         return gulp
             .src([
-                path.resolve(OUT_DIR_CLIENT_STATIC, 'js/**/*.js'),
-                `!${path.resolve(OUT_DIR_CLIENT_STATIC, 'js/**/*.min.js')}`,
-                `!${path.resolve(OUT_DIR_CLIENT_STATIC, 'js/lib/*.js')}`
+                path.resolve(this.outDirAssets, 'js/**/*.js'),
+                `!${path.resolve(this.outDirAssets, 'js/**/*.min.js')}`,
+                `!${path.resolve(this.outDirAssets, 'js/lib/*.js')}`
             ])
             .pipe(environments.development(sourcemaps.init()))
             .pipe(environments.production(uglify()))
@@ -300,29 +330,29 @@ class Client {
                 })
             )
             .pipe(environments.development(sourcemaps.write('maps')))
-            .pipe(gulp.dest(path.resolve(OUT_DIR_CLIENT_STATIC, 'js')));
+            .pipe(gulp.dest(path.resolve(this.outDirAssets, 'js')));
     }
 
     /**
      * @description Cleans the output directory of all files except minified files
      * @returns {NodeJS.ReadWriteStream}
      */
-    static cleanNonMinifiedCode() {
+    cleanNonMinifiedCode() {
         return gulp
             .src(
                 [
-                    path.resolve(OUT_DIR_CLIENT_STATIC, 'js/**/*.js'),
-                    path.resolve(OUT_DIR_CLIENT_STATIC, 'css/**/*.css'),
-                    `!${path.resolve(OUT_DIR_CLIENT_STATIC, 'js/**/*.min.js')}`,
-                    `!${path.resolve(OUT_DIR_CLIENT_STATIC, 'css/**/*.min.css')}`
+                    path.resolve(this.outDirAssets, 'js/**/*.js'),
+                    path.resolve(this.outDirAssets, 'css/**/*.css'),
+                    `!${path.resolve(this.outDirAssets, 'js/**/*.min.js')}`,
+                    `!${path.resolve(this.outDirAssets, 'css/**/*.min.css')}`
                 ],
                 { allowEmpty: true }
             )
             .pipe(clean());
     }
 
-    static cleanArtifacts() {
-        return gulp.src(path.resolve(OUT_DIR_CLIENT_STATIC, 'js/src')).pipe(clean());
+    cleanArtifacts() {
+        return gulp.src(path.resolve(this.outDirAssets, 'js/src')).pipe(clean());
     }
 
     /**
@@ -334,56 +364,57 @@ class Client {
     /**
      * @description Watches for changes in the source directory and runs the appropriate task
      */
-    static watch() {
+    watch() {
         gulp.watch(
             [
-                path.resolve(OUT_DIR_CLIENT_STATIC, 'css/**/*.css'),
-                `!${path.resolve(OUT_DIR_CLIENT_STATIC, 'css/**/*.min.css')}`
+                path.resolve(this.outDirAssets, 'css/**/*.css'),
+                `!${path.resolve(this.outDirAssets, 'css/**/*.min.css')}`
             ],
-            Client.minifyCss
+            this.minifyCss
         );
         gulp.watch(
-            [
-                path.resolve(OUT_DIR_CLIENT_STATIC, 'js/**/*.js'),
-                `!${path.resolve(OUT_DIR_CLIENT_STATIC, 'js/**/*.min.js')}`
-            ],
-            Client.minifyJs
+            [path.resolve(this.outDirAssets, 'js/**/*.js'), `!${path.resolve(this.outDirAssets, 'js/**/*.min.js')}`],
+            this.minifyJs
         );
-        gulp.watch([path.resolve(SRC_DIR_CLIENT, 'ts/**/*'), 'webpack.config.js'], Client.compileTs);
-        gulp.watch([path.resolve(SRC_DIR_CLIENT, 'scss/**/*.scss')], Client.compileSass);
-        gulp.watch([path.resolve(SRC_DIR_CLIENT, 'images/**/*')], Client.copyImages);
-        gulp.watch([path.resolve(SRC_DIR_CLIENT, 'templates/**/*')], Client.copyTemplates);
+        gulp.watch([path.resolve(this.srcDir, 'ts/**/*'), 'webpack.config.js'], this.compileTs);
+        gulp.watch([path.resolve(this.srcDir, 'scss/**/*.scss')], this.compileSass);
+        gulp.watch([path.resolve(this.srcDir, 'images/**/*')], this.copyImages);
+        gulp.watch([path.resolve(this.srcDir, 'templates/**/*')], this.copyTemplates);
     }
 }
 
-class Server {
-    static get tasks() {
+class ServerBuilder extends StackBuilder {
+    static sharedModules = ['constants', 'models'];
+    rootSrcDir = SRC_DIR_SERVER;
+    rootOutDir = OUT_DIR_SERVER;
+
+    get outDirSecrets() {
+        return path.resolve(this.outDir, '.secrets');
+    }
+
+    get tasks() {
         const tasks = [
-            Server.initalClean,
-            Server.compileTs,
-            Server.portEnvironmentVariables,
-            Server.resolveServerImports,
-            Server.generateSecrets
+            this.initalClean,
+            this.compileTs,
+            this.moveSharedFilesIntoServerDir,
+            this.removeSharedFiles,
+            this.resolveServerImports,
+            this.portEnvironmentVariables,
+            this.generateSecrets
         ];
         if (ARGS.WATCH) {
-            tasks.push(Server.watch);
+            tasks.push(this.watch);
         }
-        return tasks;
+        return tasks.map((task) => task.bind(this));
     }
 
     /** @return {typescript.Project} */
-    static getTsProject() {
+    getTsProject() {
         const tsconfig = JSON.parse(fs.readFileSync('tsconfig.json').toString());
         tsconfig.include = ['./src/constants', './src/models'];
-        fs.readdirSync(SRC_DIR_SERVER)
-            .filter((dir) => !GATEWAYS.includes(dir))
-            .forEach((dir) => tsconfig.include.push(`./src/server/${dir}`));
-        if (ARGS.GATEWAY === 'all') {
-            GATEWAYS.forEach((gateway) => tsconfig.include.push(`./src/server/${gateway}`));
-        } else {
-            tsconfig.include.push(`./src/server/${ARGS.GATEWAY}`);
-        }
-        //tsconfig.includes = [`./src/server/${srcPath}`];
+        fs.readdirSync(path.resolve(this.rootSrcDir))
+            .filter((dirname) => !GATEWAY_OPTIONS.includes(dirname) || dirname === this.gateway)
+            .forEach((dirname) => tsconfig.include.push(`./src/server/${dirname}`));
         tsconfig.exclude.push('./src/client/**/*');
         tsconfig.compilerOptions.lib = ['ES2020'];
         tsconfig.compilerOptions.moduleResolution = 'bundler';
@@ -396,46 +427,43 @@ class Server {
         return tsproject;
     }
 
-    static initalClean() {
-        if (!fs.existsSync(OUT_DIR_SERVER)) {
-            return gulp.src(SRC_DIR_SERVER);
+    initalClean() {
+        if (!fs.existsSync(this.rootOutDir)) {
+            return gulp.src(this.srcDir);
         }
         const filesToClean = fs
-            .readdirSync(OUT_DIR_SERVER)
+            .readdirSync(this.rootOutDir)
             .map((dir) => path.resolve(dir))
-            .filter((dir) => dir !== OUT_DIR_CLIENT);
+            .filter((dir) => !dir.includes(OUT_DIR_CLIENT));
         return gulp.src(filesToClean, { read: false, allowEmpty: true }).pipe(clean());
     }
 
     // Task to compile TypeScript
-    static compileTs() {
-        const tsproject = Server.getTsProject();
-        return tsproject.src().pipe(tsproject()).js.pipe(gulp.dest(OUT_DIR_SERVER));
+    compileTs() {
+        const tsproject = this.getTsProject();
+        return tsproject.src().pipe(tsproject()).js.pipe(gulp.dest(OUT_DIR));
     }
 
-    // Task to ensure .env file exists for current environment, and copy .env file over to destination folder
-    static async portEnvironmentVariables() {
-        if (ARGS.GATEWAY === 'all') {
-            Server._portEnvironmentVariables('admin');
-            Server._portEnvironmentVariables('public');
-        } else {
-            Server._portEnvironmentVariables(ARGS.GATEWAY);
-        }
+    moveSharedFilesIntoServerDir() {
+        return merge(
+            ServerBuilder.sharedModules.map((sharedModule) =>
+                gulp
+                    .src(path.resolve(OUT_DIR, sharedModule, '**/*'))
+                    .pipe(gulp.dest(path.resolve(this.rootOutDir, sharedModule)))
+            )
+        );
     }
 
-    static _portEnvironmentVariables(gateway) {
-        const dotEnvName = `.env.${gateway}.${process.env.NODE_ENV}`;
-        const dotEnvFile = path.resolve(__dirname, dotEnvName);
-        if (!fs.existsSync(dotEnvFile)) {
-            throw new Error(`${dotEnvName} file not found. Please run "npm run configure"`);
-        }
-        fs.cpSync(dotEnvFile, path.resolve(OUT_DIR_SERVER, dotEnvName.replace(`.${process.env.NODE_ENV}`, '')));
+    removeSharedFiles() {
+        return gulp
+            .src(ServerBuilder.sharedModules.map((sharedModule) => path.resolve(OUT_DIR, sharedModule)))
+            .pipe(clean());
     }
 
     // Task to change all import aliases to relative paths
-    static resolveServerImports() {
-        const tsproject = Server.getTsProject();
-        const pathAliases = Object.keys(Server.getTsProject().options.paths);
+    resolveServerImports() {
+        const tsproject = this.getTsProject();
+        const pathAliases = Object.keys(tsproject.options.paths);
 
         // Regex "if" block. e.g. api|database|utils|models
         const pathAliasesRegexSearch = pathAliases.map((p) => p.replace(/^@(.*?)(\/\*)?$/g, '$1')).join('|');
@@ -461,6 +489,7 @@ class Server {
             }
             return filePath;
         };
+        console.log('Resolving server imports', this.outDir);
 
         /**
          * @description Convert a path alias to a relative local path based on the path of the file where the alias originates from
@@ -478,16 +507,20 @@ class Server {
             const srcRelativePath = tsproject.options.paths[pathAlias]?.[0]
                 ?.replace(/(\/\*|\/|\*)$/g, '') // Remove trailing /*
                 ?.replace(/^\.\//, '') // Remove starting ./
-                ?.replace(/src\//, ''); //remove src/
+                ?.replace(/src\/(server\/)?/, ''); //remove src/server/
             if (!srcRelativePath) {
                 return '';
             }
+            console.log('getting local path ', rawAlias, filePath);
+            console.log('--prefix to remove', this.rootOutDir);
             const modulePathPrefix = path
                 .dirname(filePath)
-                .replace(OUT_DIR_SERVER, '')
+                .replace(this.rootOutDir, '')
                 .split('/')
                 .map((x, i) => (i === 0 ? './' : '../'))
                 .join('');
+            console.log('--modulePathPrefix:', modulePathPrefix);
+            console.log('--srcRelativePath', srcRelativePath);
             const fullPath = modulePathPrefix + srcRelativePath;
             const fullPathAll = path.resolve(path.dirname(filePath), fullPath);
             return fullPath;
@@ -504,6 +537,7 @@ class Server {
         const handleReplace = (variableName, rawAlias, moduleProjectPath, fileAbsolutePath) => {
             //moduleProjectPath = addDotJS(moduleProjectPath);
             let localPath = getLocalPath(rawAlias, fileAbsolutePath);
+            console.log('Initial local path:', localPath);
             if (!localPath) {
                 // Original value with "@" stripped
                 return variableName
@@ -533,7 +567,7 @@ class Server {
 
         // Replace all imports across all js files in the out dir
         return gulp
-            .src([path.resolve(OUT_DIR_SERVER, './**/*.js'), `!${OUT_DIR_CLIENT}`])
+            .src([path.resolve(this.rootOutDir, './**/*.js'), `!${OUT_DIR_CLIENT}`])
             .pipe(
                 replace(variableImportRegex, function (match, variableName, rawAlias, moduleProjectPath = '') {
                     return handleReplace(variableName, rawAlias, moduleProjectPath, this.file.path);
@@ -544,16 +578,29 @@ class Server {
                     return handleReplace(null, rawAlias, moduleProjectPath, this.file.path);
                 })
             )
-            .pipe(gulp.dest(OUT_DIR_SERVER));
+            .pipe(gulp.dest(this.rootOutDir));
     }
 
-    static async generateSecrets() {
-        if (!fs.existsSync(JWT_KEYS_DIR)) {
-            fs.mkdirSync(JWT_KEYS_DIR, {
+    // Task to ensure .env file exists for current environment, and copy .env file over to destination folder
+    async portEnvironmentVariables() {
+        const dotEnvName = `.env.${this.gateway}.${process.env.NODE_ENV}`;
+        const dotEnvFile = path.resolve(__dirname, dotEnvName);
+        if (!fs.existsSync(dotEnvFile)) {
+            throw new Error(`${dotEnvName} file not found. Please run "npm run configure"`);
+        }
+        fs.cpSync(dotEnvFile, path.resolve(this.outDir, '.env'));
+    }
+
+    async generateSecrets() {
+        const jwtKeysDir = path.resolve(this.outDirSecrets, 'jwt');
+        const jwtPublicKeyFile = path.resolve(jwtKeysDir, JWT_PUBLIC_KEY_FILENAME);
+        const jwtPrivateKeyFile = path.resolve(jwtKeysDir, JWT_PRIVATE_KEY_FILENAME);
+        if (!fs.existsSync(jwtKeysDir)) {
+            fs.mkdirSync(jwtKeysDir, {
                 recursive: true
             });
         }
-        if (fs.existsSync(JWT_PUBLIC_KEY_FILE)) {
+        if (fs.existsSync(jwtPublicKeyFile)) {
             return;
         }
         const keyPair = crypto.generateKeyPairSync('ec', {
@@ -567,8 +614,8 @@ class Server {
                 format: 'pem'
             }
         });
-        fs.writeFileSync(JWT_PUBLIC_KEY_FILE, keyPair.publicKey);
-        fs.writeFileSync(JWT_PRIVATE_KEY_FILE, keyPair.privateKey);
+        fs.writeFileSync(jwtPublicKeyFile, keyPair.publicKey);
+        fs.writeFileSync(jwtPrivateKeyFile, keyPair.privateKey);
     }
 
     /**
@@ -580,10 +627,10 @@ class Server {
     /**
      * @description Watches for changes in the source directory and runs the appropriate task
      */
-    static watch() {
+    watch() {
         gulp.watch(
-            [SRC_DIR_SERVER, path.resolve(SRC_DIR_SERVER, 'constants'), path.resolve(SRC_DIR_SERVER, 'models')],
-            Server.compileTs
+            [this.srcDir, path.resolve(SRC_DIR, 'constants'), path.resolve(SRC_DIR, 'models')],
+            gulp.series([this.compileTs, this.resolveServerImports])
         );
     }
 }
@@ -607,13 +654,16 @@ if (!environments[process.env.NODE_ENV]) {
 environments.current(environments[process.env.NODE_ENV]);
 
 // Define tasks for all environments
-const tasks = [];
+/** @type {Array<StackBuilder>} */
+const builders = [];
 if (ARGS.STACK === 'client' || ARGS.STACK === 'all') {
-    tasks.push(...Client.tasks);
+    SELECTED_GATEWAYS.forEach((gateway) => builders.push(new ClientBuilder(gateway)));
 }
 if (ARGS.STACK === 'server' || ARGS.STACK === 'all') {
-    tasks.push(...Server.tasks);
+    SELECTED_GATEWAYS.forEach((gateway) => builders.push(new ServerBuilder(gateway)));
 }
+console.log('Builders:', builders);
+const tasks = builders.reduce((allTasks, builder) => allTasks.concat(builder.tasks), []);
 
 // Evaluate all tasks for gulp to execute & set the default task as a series of all tasks that need to be executed for this environment
 tasks.forEach(gulp.task);

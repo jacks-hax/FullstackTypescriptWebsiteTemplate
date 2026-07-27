@@ -157,8 +157,8 @@ export default function StaticFiles(reactPathPrefix: string): Express.RequestHan
 
             // Path sanatization
             let requestPath = request.path;
-            if (response.page) {
-                requestPath = '/' + response.page;
+            if (request.page) {
+                requestPath = '/' + request.page;
             }
             while (requestPath.includes('//')) {
                 requestPath = requestPath.replaceAll('//', '/');
@@ -169,7 +169,6 @@ export default function StaticFiles(reactPathPrefix: string): Express.RequestHan
 
             console.log('static file requested:', requestPath);
             // If static file, check cache, then read from disk if necessary
-            // TODO : Implement popularity based caching
             if (requestPath.startsWith('/static')) {
                 const contentType = Utils.getContentType(path.basename(requestPath));
                 response.setHeader(Constants.HEADERS.CONTENT_TYPE, contentType);
@@ -181,23 +180,6 @@ export default function StaticFiles(reactPathPrefix: string): Express.RequestHan
                     if (fs.existsSync(staticPath) && fs.statSync(staticPath).isFile()) {
                         const buffer = fs.readFileSync(staticPath);
                         response.status(200).send(buffer);
-                        //response.status(200).sendFile(
-                        //    requestPath,
-                        //    {
-                        //        root: PUBLIC_DIR,
-                        //        lastModified: true,
-                        //        cacheControl: true,
-                        //        maxAge: 3600000,
-                        //        headers: {
-                        //            connection: 'close'
-                        //        }
-                        //    },
-                        //    (error) => {
-                        //        if (error) {
-                        //            next();
-                        //        }
-                        //    }
-                        //);
                         if (isCacheable(staticPath)) {
                             cacheStaticFile(staticPath, buffer);
                         }

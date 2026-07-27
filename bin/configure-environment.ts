@@ -57,11 +57,6 @@ const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const OUT_DIR = path.resolve('dist');
-const SECRETS_DIR = path.resolve(OUT_DIR, '.private');
-
-// Leaving these hardcoded since the paths of these files is arbitrary
-const JWT_PRIVATE_KEY_FILE = path.resolve(SECRETS_DIR, 'jwt/private-key.pem');
-const JWT_PUBLIC_KEY_FILE = path.resolve(SECRETS_DIR, 'jwt/public-key.pem');
 
 const GATEWAY_CONFIG = new CLIValueConfig({
     key: 'GATEWAY',
@@ -104,6 +99,7 @@ const ENVIRONMENT_VARIABLE_CONFIGS: Readonly<Array<CLIValueConfig>> = Object.fre
         flags: new Set(['--port', '-p']),
         defaultValue: '8080'
     }),
+    GATEWAY_CONFIG,
     GATEWAY_PATH_CONFIG,
     new CLIValueConfig({
         key: 'MYSQL_HOST',
@@ -281,6 +277,11 @@ async function main() {
         writeVariableToDraftFile('SERVER_PROTOCOL', protocol);
 
         // Generate JWT Secrets and apply file paths to env
+        const SECRETS_DIR = path.resolve(OUT_DIR, 'server', gateway as string, '.secrets');
+
+        // Leaving these hardcoded since the paths of these files is arbitrary
+        const JWT_PRIVATE_KEY_FILE = path.resolve(SECRETS_DIR, 'jwt/private-key.pem');
+        const JWT_PUBLIC_KEY_FILE = path.resolve(SECRETS_DIR, 'jwt/public-key.pem');
         if (!fs.existsSync(JWT_PRIVATE_KEY_FILE)) {
             console.log('Checking existence of ', path.dirname(JWT_PRIVATE_KEY_FILE));
             if (!fs.existsSync(path.dirname(JWT_PRIVATE_KEY_FILE))) {
