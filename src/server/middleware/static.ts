@@ -8,7 +8,7 @@ import fs from 'fs';
 
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const CLIENT_DIR = path.resolve(__dirname, '../../client', process.env.GATEWAY);
+const CLIENT_DIR = path.resolve(__dirname, '../../client');
 const TEMPLATE_FILE_PATH = path.resolve(CLIENT_DIR, 'index.html');
 
 const TEMPLATE_DATA_GLOBAL: Record<string, string> = {
@@ -23,6 +23,9 @@ export function renderHtml(page: string, data: IAppData & Record<string, any>): 
     if (!page.startsWith('/')) {
         page = '/' + page;
     }
+    if (page === '/') {
+        page = '';
+    }
     return StringUtils.merge(TEMPLATE_HTML, {
         canonical_path: page,
         title: StringUtils.toTitle(page),
@@ -32,7 +35,9 @@ export function renderHtml(page: string, data: IAppData & Record<string, any>): 
 }
 
 export default function Static(gateway: string): Express.Router {
+    console.log('Client Dir:', CLIENT_DIR);
     const staticPath = path.resolve(CLIENT_DIR, gateway, 'static');
+    console.log('static path:', staticPath);
     const router = Express.Router();
     router.use(
         '/assets',
