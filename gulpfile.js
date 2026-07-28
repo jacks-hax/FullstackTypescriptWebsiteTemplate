@@ -456,8 +456,18 @@ class ServerBuilder extends StackBuilder {
 
     removeSharedFiles() {
         return gulp
-            .src(ServerBuilder.sharedModules.map((sharedModule) => path.resolve(OUT_DIR, sharedModule)))
-            .pipe(clean());
+            .src(
+                ServerBuilder.sharedModules.map((sharedModule) => path.resolve(OUT_DIR, sharedModule)),
+                {
+                    read: false
+                }
+            )
+            .pipe(
+                clean({
+                    read: false,
+                    force: true
+                })
+            );
     }
 
     // Task to change all import aliases to relative paths
