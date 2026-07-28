@@ -18,10 +18,10 @@
         <script type="text/javascript">
             window.AppData = {{!app_data}}
         </script>
-        <script src="/assets/js/vendors.min.js"></script>
-        <script src="/assets/js/runtime.min.js"></script>
-        <script src="/assets/js/app/index.min.js"></script>
-        <script defer src="/assets/js/{{!page}}/index.min.js"></script>
+        <script id="react-vendors" src="/assets/js/vendors.min.js"></script>
+        <script id="react-runtime" src="/assets/js/runtime.min.js"></script>
+        <script id="react-app" src="/assets/js/app/index.min.js" defer></script>
+        <script id="react-init-page" src="/assets/js/pages/{{!page}}/index.min.js" defer></script>
     </head>
     <body>
         <div id="root"></div>

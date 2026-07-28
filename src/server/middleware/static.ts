@@ -9,7 +9,6 @@ import fs from 'fs';
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const CLIENT_DIR = path.resolve(__dirname, '../../client');
-const TEMPLATE_FILE_PATH = path.resolve(CLIENT_DIR, 'index.html');
 
 const TEMPLATE_DATA_GLOBAL: Record<string, string> = {
     application_name: "Jack's Hacks",
@@ -17,31 +16,31 @@ const TEMPLATE_DATA_GLOBAL: Record<string, string> = {
     theme_color: 'black',
     host: process.env.SERVER_HOST_NAME
 };
-const TEMPLATE_HTML = StringUtils.merge(fs.readFileSync(TEMPLATE_FILE_PATH).toString(), TEMPLATE_DATA_GLOBAL);
-
-export function renderHtml(page: string, data: IAppData & Record<string, any>): string {
-    if (!page.startsWith('/')) {
-        page = '/' + page;
-    }
-    if (page === '/') {
-        page = '';
-    }
-    return StringUtils.merge(TEMPLATE_HTML, {
-        canonical_path: page,
-        title: StringUtils.toTitle(page),
-        page: `${page}`,
-        app_data: JSON.stringify(data)
-    });
-}
 
 export default function Static(gateway: string): Express.Router {
     console.log('Client Dir:', CLIENT_DIR);
-    const staticPath = path.resolve(CLIENT_DIR, gateway, 'static');
-    console.log('static path:', staticPath);
+    const scopedClientDir = path.resolve(CLIENT_DIR, gateway);
+
+    // Cache the template html file used for rendering react files and define a function to render a react page
+    const templateFilePath = path.resolve(scopedClientDir, 'index.html');
+    const templateHtml = StringUtils.merge(fs.readFileSync(templateFilePath).toString(), TEMPLATE_DATA_GLOBAL);
+    function renderHtml(pagePath: string, appData: IAppData & Record<string, any>): string {
+        if (pagePath === '/') {
+            pagePath = '';
+        }
+        return StringUtils.merge(templateHtml, {
+            page: pagePath,
+            canonical_path: pagePath,
+            title: StringUtils.toTitle(pagePath),
+            app_data: JSON.stringify(appData)
+        });
+    }
+
+    // Route all /assets requests to a static file servlet
     const router = Express.Router();
     router.use(
         '/assets',
-        Express.static(path.resolve(staticPath, 'assets'), {
+        Express.static(path.resolve(scopedClientDir, 'assets'), {
             cacheControl: true,
             dotfiles: 'deny',
             fallthrough: true,
@@ -51,10 +50,11 @@ export default function Static(gateway: string): Express.Router {
         })
     );
 
+    // Attempt to handle any fallthrough requests as react pages
     router.use('/', (request: Request, response: Response, next: Function) => {
         try {
             if (request.method !== 'GET') {
-                return next(); // Resolves to 404
+                return next(); // Falls through to 404
             }
 
             // Path sanatization
@@ -67,6 +67,9 @@ export default function Static(gateway: string): Express.Router {
             }
             while (requestPath.includes('..')) {
                 requestPath = requestPath.replaceAll('..', '');
+            }
+            if (!requestPath.startsWith('/')) {
+                requestPath = '/' + requestPath;
             }
 
             console.log('static file requested:', requestPath);

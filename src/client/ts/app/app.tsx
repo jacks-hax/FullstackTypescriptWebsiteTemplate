@@ -6,6 +6,8 @@ import ReactEventBus, { ReactEvent } from '@client/utils/react-event-bus';
 import Spinner from '@client/components/spinner';
 declare const window: AppWindow;
 
+const HomeScreen = React.lazy(() => import('../pages/admin/post/post-page'));
+
 export default function App(): React.JSX.Element {
     const [bodyComponent, setBodyComponent] = React.useState<React.JSX.Element>();
     const currentPathRef = React.useRef<string>(window.location.pathname);
